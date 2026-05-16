@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { AppHeader } from "@/components/AppHeader";
 import { MoonPhase } from "@/components/MoonPhase";
+import { CallbackCard } from "@/components/CallbackCard";
+import { selectCallbackEntry } from "@/lib/server-actions/callback";
+import { formatDisplay } from "@/lib/utils/date";
+import { extractBodyPhase, extractFreeText } from "@/lib/utils/entry";
 
 interface Props {
   searchParams: Promise<{ streak?: string }>;
@@ -9,6 +13,7 @@ interface Props {
 export default async function DonePage({ searchParams }: Props) {
   const params = await searchParams;
   const streak = parseInt(params.streak ?? "1", 10);
+  const callback = await selectCallbackEntry();
 
   return (
     <main className="min-h-dvh">
@@ -34,6 +39,15 @@ export default async function DonePage({ searchParams }: Props) {
               <span className="text-lg ml-1 font-medium">つ</span>
             </p>
           </div>
+
+          {callback && (
+            <CallbackCard
+              dateLabel={formatDisplay(callback.entry.entry_date)}
+              bodyPhase={extractBodyPhase(callback.entry)}
+              entryText={extractFreeText(callback.entry)}
+              stageLabel={callback.label}
+            />
+          )}
 
           <Link
             href="/calendar"

@@ -3,7 +3,7 @@
 > 今やる / 次やる / 検討する を一箇所にまとめた living TODO。
 > ADR の未解決の論点 + ROADMAP の must-have + SPEC / PRD の open items を統合。
 > 各項目に **出典** を併記、詳細は元 doc を参照。
-> 最終更新: 2026-05-16
+> 最終更新: 2026-05-17
 
 ---
 
@@ -11,12 +11,27 @@
 
 開始前の準備と、テスト中に並行で進めるもの。
 
+### Phase 0 着手前の最小実装(v1.0 から pull forward)
+ADR-019 世界観「星が積もる」を Phase 0 で実機検証するため、callback だけ v1.0 から前倒し。
+
+- [x] ~~**Past-entry callback 最小実装(Phase 0 scope: Stage 1-4 / deterministic unlock)**~~ **2026-05-17 完了**
+  - migration: `supabase/migrations/20260517000000_callback_state.sql`(callback state + ADR-012 forward-compat 同梱)
+  - Server Action: `lib/server-actions/callback.ts`(γ stage モデル、cool-down 3日 / 確率 35%)
+  - util: `lib/utils/entry.ts`(`extractBodyPhase` / `extractFreeText`)
+  - 統合: `app/today/done/page.tsx` ─ streak と calendar Link の間に CallbackCard
+  - 出典: `ADR-017` / `SPEC.md` §8
+- [ ] **ローカル動作確認** ─ `scripts/seed-callback.sql` で過去4エントリ投入 → 5本目 submit → Stage 1 deterministic 発火を確認(off-by-one バグ炙り出し)
+
+### デプロイ
+- [ ] **Supabase 本番プロジェクト作成 + 初期 migration** ─ `DEPLOYMENT.md` Step 1(migration 2ファイル: `20260510000000_initial.sql` + `20260517000000_callback_state.sql`)
 - [ ] **Vercel デプロイ** ─ `DEPLOYMENT.md` Step 2
-- [ ] **Supabase 本番プロジェクト作成 + 初期 migration** ─ `DEPLOYMENT.md` Step 1
 - [ ] **メール配信設定** ─ Resend 推奨、当面 Supabase 標準でも可 ─ `DEPLOYMENT.md` §1.5
 - [ ] **iOS Safari にホーム追加してリマインダーセット** ─ `DEPLOYMENT.md` Step 5, 7
+
+### Phase 0 本番(30日)
 - [ ] **30日連続使用** ─ `ROADMAP.md` Phase 0 / `PRD.md` §7
 - [ ] **`FRICTION-LOG.md` に毎日記録** ─ 違和感は全部書く、修正は後回し
+  - 特に観察すべき: callback の trigger タイミング(unlock 発火 / refire)、表示エントリの選ばれ方の体感、リロード時に消える挙動が「ふと出てくる」と整合するか
 
 判断:Phase 0 成功(21日以上連続)→ v1.0 着手 / 失敗 → 摩擦分析 → 修正 → リスタート
 
@@ -27,15 +42,19 @@
 Phase 0 終了して、β に向けた本格実装。
 
 ### コア機能(必須)
-- [ ] **AI follow-up question** 実装 ─ `ADR-012` / `SPEC.md` §3
-- [ ] **DB スキーマ migration** ─ 1ファイルにまとめて:
-  - `answers.question_position` CHECK を 1..3 → 1..5(or 削除)
-  - `answers.question_text` 列追加(nullable、AI 生成質問用)
-  - `profiles.last_callback_at` / `profiles.unlocked_stage` 追加(callback state)
-  - 出典:`ADR-012`, `ADR-017`, `SPEC.md` §2 §8
-- [ ] **Past-entry callback** 実装 ─ `ADR-017` / `SPEC.md` §8
-  - `selectCallbackEntry()` Server Action(未着手、DB migration とセット)
-  - ~~callback カード UI コンポーネント~~ **2026-05-16 完了**:`components/CallbackCard.tsx`、未統合(SA 待ち)
+- [ ] **AI follow-up question** 実装 ─ `ADR-012` / `SPEC.md` §3(schema 側は callback migration に同梱済みで前準備完了)
+- [x] ~~**DB スキーマ migration**~~ **2026-05-17 完了** ─ `supabase/migrations/20260517000000_callback_state.sql`:
+  - ~~`answers.question_position` CHECK を 1..3 → 1..5~~ ← 1..5 に緩和
+  - ~~`answers.question_text` 列追加~~ ← 追加(Phase 0 未使用、ADR-012 forward-compat)
+  - ~~`profiles.last_callback_at` / `profiles.unlocked_stage` 追加~~ ← 追加
+- [ ] **Past-entry callback v1.0 本実装** ─ Phase 0 scope は完了(🌒 セクション参照)。v1.0 で追加するもの:
+  - ~~`selectCallbackEntry()` Server Action 基盤~~ **2026-05-17 完了**(Phase 0 scope)
+  - ~~callback カード UI コンポーネント~~ **2026-05-16 完了**:`components/CallbackCard.tsx`
+  - ~~done page 統合~~ **2026-05-17 完了**:`app/today/done/page.tsx` + `lib/utils/entry.ts`
+  - [ ] Stage 5+(ひと季節前など)と anniversary(1年前)実装
+  - [ ] window-probabilistic unlock への切り戻し検討(Phase 0 FRICTION-LOG 入力次第、現状は Phase 0 用に deterministic 化)
+  - [ ] 似てる体感の日 callback(身体感覚軸)─ `ADR-017` future
+  - 出典: `ADR-017` / `SPEC.md` §8
 - [ ] **追加テンプレート**(仕事 / 親 / クリエイター系) ─ `ROADMAP.md` v1.0
 - [ ] **テンプレ選択 onboarding** ─ `ROADMAP.md` v1.0
 - [ ] **月次 AI レポート** 生成 ─ `SPEC.md` §9
@@ -68,11 +87,13 @@ Phase 0 終了して、β に向けた本格実装。
 - [ ] **AI follow-up 失敗時 fallback**(silent skip / retry / Q3 にジャンプ) ─ `ADR-012` open
 - [ ] **Custom template UI**(v1.1 前にモックアップ必要) ─ `SPEC.md` §15
 - [ ] **Push 通知 opt-in タイミング**(Day 3 / 初回完了 / その他) ─ `SPEC.md` §15
-- [ ] **callback カードの視覚デザイン** ─ `ADR-017` open
+- [ ] **callback カードの視覚デザイン** ─ `ADR-017` open(現状 `bg-primary-50 border-primary-100` 暫定、Phase 0 FRICTION-LOG 観察を待ってから磨く)
 - [ ] **callback エッジケース**:
-  - [ ] 範囲内エントリがない時のフォールバック挙動(現状:silent skip)
+  - [x] ~~範囲内エントリがない時のフォールバック挙動~~ **2026-05-17 実装決定**: silent skip(`last_callback_at` も更新せず翌日リトライ可)
+  - [x] ~~unlock 発火日に該当 range の Q2 が全空~~ **2026-05-17 実装決定**: `unlocked_stage` を bump せず `null`、後日 back-fill で再発火可
   - [ ] 過去エントリ編集後の再表示ポリシー
   - [ ] 「この日は見たくない」 opt-out 粒度
+  - [ ] `/today/done` リロードで callback が消える挙動の是非(現状: cool-down で re-roll 失敗 → 消える。Phase 0 で体感確認)
   - 出典:`ADR-017` open
 - [ ] **Year 2+ anniversary 挙動**(2年前・3年前のスタック?)─ `ADR-017` open
 - [ ] **月次レポート出力スキーマ再設計**(ADR-016 違反箇所を curation primitive に置換) ─ `ADR-016` consequences
