@@ -3,8 +3,10 @@ node_modules
 .env
 .env.local
 .env*.local
+.env.local.bak.*
 *.log
 .DS_Store
 .vercel
 *.tsbuildinfo
 next-env.d.ts
+design/exports/

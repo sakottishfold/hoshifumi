@@ -47,14 +47,14 @@ export default async function SettingsPage() {
             />
           </SettingsCard>
 
-          <SettingsCard title="記録">
+          <SettingsCard title="灯した夜">
             <Row
-              label="連続記録"
-              value={`${profile?.streak_days ?? 0}日`}
+              label="いま"
+              value={`${profile?.streak_days ?? 0}つ`}
             />
             <Row
-              label="最長記録"
-              value={`${profile?.longest_streak ?? 0}日`}
+              label="いちばん長く"
+              value={`${profile?.longest_streak ?? 0}つ`}
             />
           </SettingsCard>
 
