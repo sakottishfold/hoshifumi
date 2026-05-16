@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* ========================================
+     いとなみ palette — "夜、ふとんから星を見上げる"
+     deep indigo background + warm cream text + amber moon accents
+     ======================================== */
+
+  /* Primary = moon/amber (the warm signature color of the logo) */
+  --color-primary: oklch(83% 0.10 80);
+  --color-primary-50: oklch(22% 0.03 75);    /* subtle amber-tinted dark surface — highlight bg */
+  --color-primary-100: oklch(30% 0.05 75);   /* warm border tint */
+  --color-primary-500: oklch(83% 0.10 80);   /* the moon cream — main accent / CTA bg */
+  --color-primary-600: oklch(73% 0.12 75);   /* hover state for primary CTAs */
+  --color-primary-700: oklch(85% 0.13 75);   /* accent text on dark bg (must read against neutral-50) */
+
+  /* Accent — keep the original lavender as a secondary accent for emphasis */
+  --color-accent: oklch(70% 0.15 290);
+  --color-accent-500: oklch(70% 0.15 290);
+
+  /* Neutral scale — INVERTED for dark theme.
+     neutral-50 (was lightest) is now the elevated card surface (slightly lifted from body bg).
+     neutral-900 (was darkest) is now the warm cream body text. */
+  --color-neutral-50:  oklch(18% 0.04 280);  /* elevated card / input surface */
+  --color-neutral-100: oklch(24% 0.04 280);  /* hover bg / subtle alt surface */
+  --color-neutral-200: oklch(32% 0.03 280);  /* visible border on dark */
+  --color-neutral-300: oklch(42% 0.025 280); /* future-day text, very muted */
+  --color-neutral-400: oklch(55% 0.025 75);  /* tertiary muted text (warm-tinted) */
+  --color-neutral-500: oklch(67% 0.025 75);  /* labels, captions */
+  --color-neutral-600: oklch(76% 0.02 75);   /* secondary body text */
+  --color-neutral-700: oklch(83% 0.02 75);   /* body text strong */
+  --color-neutral-800: oklch(89% 0.02 75);
+  --color-neutral-900: oklch(94% 0.02 75);   /* primary body text — warm cream off-white */
+
+  /* Primary: Zen Maru Gothic (warm rounded gothic, web font).
+     Fallback: Hiragino Maru Gothic ProN on Mac/iOS (rounded, native).
+     Final fallback: system sans (loses warmth but stays readable). */
+  --font-sans: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "ヒラギノ丸ゴ ProN W4", "Yu Gothic Medium", "YuGothic", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  /* page void — deeper than any card surface, the night-sky behind everything */
+  background: oklch(12% 0.04 280);
+  color: oklch(94% 0.02 75);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* iOS PWA - safe area対応 */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Disable iOS bounce */
+html {
+  overscroll-behavior-y: none;
+}
