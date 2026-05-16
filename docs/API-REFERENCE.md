@@ -1,7 +1,7 @@
 # API リファレンス
 
 > Claude Code が既存の関数を素早く調べるためのリファレンス。
-> Last updated: 2026-05-16(ADR-011〜019 反映済み。AI follow-up (ADR-012) と past-entry callback (ADR-017) は未実装)
+> 最終更新: 2026-05-16(ADR-011〜019 反映済み。AI follow-up (ADR-012) と past-entry callback (ADR-017) は未実装)
 
 ## Server Actions
 
@@ -280,24 +280,24 @@ interface Props {
 
 ## ルート(file → URL)
 
-| File | URL | 認証要 |
+| ファイル | URL | 認証要 |
 |---|---|---|
 | `app/page.tsx` | `/` | 認証状態でリダイレクト |
-| `app/login/page.tsx` | `/login` | No |
-| `app/auth/callback/route.ts` | `/auth/callback` | No |
-| `app/today/page.tsx` | `/today` | Yes |
-| `app/today/done/page.tsx` | `/today/done` | Yes |
-| `app/calendar/page.tsx` | `/calendar` | Yes |
-| `app/calendar/[date]/page.tsx` | `/calendar/YYYY-MM-DD` | Yes |
-| `app/settings/page.tsx` | `/settings` | Yes |
-| `app/manifest.ts` | `/manifest.webmanifest` | No |
+| `app/login/page.tsx` | `/login` | 不要 |
+| `app/auth/callback/route.ts` | `/auth/callback` | 不要 |
+| `app/today/page.tsx` | `/today` | 必要 |
+| `app/today/done/page.tsx` | `/today/done` | 必要 |
+| `app/calendar/page.tsx` | `/calendar` | 必要 |
+| `app/calendar/[date]/page.tsx` | `/calendar/YYYY-MM-DD` | 必要 |
+| `app/settings/page.tsx` | `/settings` | 必要 |
+| `app/manifest.ts` | `/manifest.webmanifest` | 不要 |
 
 ## 環境変数
 
 | 変数 | 使用箇所 | 必須 |
 |---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | 全 Supabase クライアント | Yes |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 全 Supabase クライアント | Yes |
-| `SUPABASE_SERVICE_ROLE_KEY` | v1.0+ AI follow-up / v1.1+ cron jobs | v0 では No |
-| `ANTHROPIC_API_KEY` | v1.0+ AI follow-up / v1.1+ 月次レポート | v0 では No |
-| `NEXT_PUBLIC_SITE_URL` | 認証リダイレクト | Yes |
+| `NEXT_PUBLIC_SUPABASE_URL` | 全 Supabase クライアント | 必須 |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 全 Supabase クライアント | 必須 |
+| `SUPABASE_SERVICE_ROLE_KEY` | v1.0+ AI follow-up / v1.1+ cron jobs | v0 では不要 |
+| `ANTHROPIC_API_KEY` | v1.0+ AI follow-up / v1.1+ 月次レポート | v0 では不要 |
+| `NEXT_PUBLIC_SITE_URL` | 認証リダイレクト | 必須 |

@@ -2,7 +2,7 @@
 
 > ほしふみの北極星。全 visual / コピー / motion / AI 挙動 / プロダクト判断はこれに照らされる。
 > ADR-019 が canonical decision、この doc は **日々参照される operational reference**。
-> Last updated: 2026-05-16
+> 最終更新: 2026-05-16
 
 ---
 
@@ -10,7 +10,7 @@
 
 > **夜、ふとんから星を見上げるアプリ**
 
-Litmus test:
+リトマス試験:
 > **「これは横たわってベッドで自身の蓄積する journaling 星空を見上げる人と一致するか?」**
 
 すべての設計判断で、この問いをくぐらせる。
@@ -27,24 +27,24 @@ Litmus test:
 
 ---
 
-## YES list:この世界に含まれるもの
+## YES リスト:この世界に含まれるもの
 
 すべての visual / copy / motion の判断は、これらの方向に寄せる。
 
 | 要素 | 具体 |
 |---|---|
-| **Posture** | 受動的、横たわっている、surrendered。production していない |
+| **姿勢** | 受動的、横たわっている、surrendered。production していない |
 | **視線** | 上向き、外向き / cosmic、それが内向きに turn する |
-| **Space** | enclosed safety(ふとん)+ vast openness(夜空)の二層 |
+| **空間** | enclosed safety(ふとん)+ vast openness(夜空)の二層 |
 | **光の質** | 深い暗さの上の warm small point。「灯」のスケール感 |
 | **音/沈黙** | デフォルト沈黙。喋るときはユーザーを引用するときだけ |
 | **時間** | 月相が progress、過去エントリが再 surface、アーカイブが個人の空に |
-| **Pace** | 遅い / breathing。fade と breath motion |
+| **テンポ** | 遅い / breathing。fade と breath motion |
 | **色温度** | 温かい(amber、warm cream)、寒色は避ける |
 
 ---
 
-## NO list:この世界が拒むもの(anti-pattern カタログ)
+## NO リスト:この世界が拒むもの(アンチパターンのカタログ)
 
 「これ NG だっけ?」と思ったときの統合参照。複数の ADR / PRD に散らばっているのを一箇所に集約。
 
@@ -70,7 +70,7 @@ Litmus test:
 
 ---
 
-## Operational specifics
+## 運用上の具体仕様
 
 ### 色(`app/globals.css` の `@theme` ブロック)
 
@@ -154,10 +154,10 @@ Litmus test:
 
 新規 UI / コピー / 機能を設計するときの手順:
 
-1. **Litmus test** を当てる:「ふとんで横になって星を見上げる人と一致するか?」
-2. **YES list** との一致を確認:該当する要素は何個ハマるか
-3. **NO list** をスキャン:どれかに抵触しないか
-4. 抵触するなら、代案を NO list の「代わりに」列から考える
+1. **リトマス試験**を当てる:「ふとんで横になって星を見上げる人と一致するか?」
+2. **YES リスト**との一致を確認:該当する要素は何個ハマるか
+3. **NO リスト**をスキャン:どれかに抵触しないか
+4. 抵触するなら、代案を NO リストの「代わりに」列から考える
 5. 迷ったら **CLAUDE.md の Worldview ノート** か **ADR-019** に立ち戻る
 
 このファイル自体も世界観の進化に合わせて update する(=living doc)。

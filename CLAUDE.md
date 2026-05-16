@@ -164,6 +164,46 @@ When tests are added (likely v1.1): Vitest for utilities, Playwright for E2E.
 
 Vercel + Supabase. See `docs/DEPLOYMENT.md` for the full setup checklist.
 
+## Files NOT to edit directly
+
+Owner-managed. Propose diffs in chat, but never edit directly:
+
+- `docs/PRD.md` — product strategy
+- `docs/DECISIONS.md` — ADRs are **append-only**; never modify or rewrite existing ADRs (use "superseded by ADR-NNN" pattern instead)
+- `docs/ROADMAP.md` — owner manages version planning
+
+## Common Q&A
+
+Brief guidance for recurring questions. See `docs/DECISIONS.md` for "why" context on each.
+
+- **Add tests?** No tests in v0. Add when: same bug recurs ≥2 times / implementing complex logic (streak calc, AI prompt construction) / before v1.0 launch (Playwright login → submit happy-path E2E).
+- **Refactor X to clean it up?** Probably not. Exceptions: X blocks a specific feature / X recently caused a bug / refactor fits in <30 min.
+- **Update dependencies?** Only for: security patches / required by a new feature / explicit owner request. Don't update just to stay current.
+- **Owner asks to "make it cleaner"?** Open `app/globals.css` first — look at existing tokens. Don't introduce new colors/spacings. Look for consistency drift in existing UI before adding anything. If a real change is needed, propose 2–3 code mockups for the owner to choose. Always check against ADR-019 (worldview): does it fit "夜、ふとんから星を見上げる"?
+- **Owner requests an anti-goal feature?** Push back. Quote the specific anti-goal from `docs/PRD.md` §3. Propose an alternative that meets the underlying need. Example: "add streak loss notifications" → quote ADR-008 (no punishment) → propose "gentle reminder after 3 days of disuse".
+- **Owner requests AI interpretation?** Quote ADR-016 (引用係原則) and push back. AI may quote/select/arrange/ask back; AI may NOT summarize/label/diagnose/advise/announce patterns. Redesign as a curation primitive.
+
+## Where to find things
+
+| Looking for | Location |
+|---|---|
+| Why a decision was made | `docs/DECISIONS.md` (especially recent ADR-011 〜 ADR-020) |
+| Which features are in scope for this version | `docs/ROADMAP.md` |
+| How feature X is implemented | `docs/SPEC.md` (search for X) |
+| Product value / anti-goals | `docs/PRD.md` §3 |
+| User personas | `docs/PRD.md` §4 |
+| Tech stack rationale | this file + `docs/DECISIONS.md` |
+| Deployment steps | `docs/DEPLOYMENT.md` |
+| File layout / where to add new things | `docs/STRUCTURE.md` |
+| Code patterns (Server Action, Form, type) — quick reference | `docs/API-REFERENCE.md` |
+| Worldview definition (canonical decision) | `docs/DECISIONS.md` ADR-019 |
+| Worldview operational reference / NG catalog / copy & tone criteria | `docs/WORLDVIEW.md` |
+| Design system — tokens & component specs for AI agents | `docs/DESIGN.md` (Stitch 9-section format) |
+| Motion spec (duration / easing / use cases / anti-patterns) | `docs/MOTION.md` |
+| How to design visually in Pencil | `docs/PENCIL.md` |
+| Next actions / TODO / open decisions (canonical) | `docs/NEXT-ACTIONS.md` |
+| Phase 0 self-test friction log | `docs/FRICTION-LOG.md` |
+
 ## When in doubt
 
 1. Check `docs/SPEC.md` for spec details

@@ -33,7 +33,7 @@
 
 ゴール:オーナー以外のユーザー(配偶者・友人)が使えるアプリにする。
 
-### Must-have
+### 必須
 - [ ] 日次フローに AI follow-up question(ADR-012)— single-turn、Claude Haiku 4.5
 - [ ] DB スキーマ migration:`answers.question_position` の CHECK を緩和、AI 生成質問用の `question_text` 列追加
 - [ ] 追加テンプレート(仕事 / 親 / クリエイター 系、同じ5分の儀式構造)
@@ -46,13 +46,13 @@
 - [ ] 利用規約ページ
 - [ ] Past-entry callback(ADR-017)を `/today/done` に実装
 
-### Nice-to-have
+### あると嬉しい
 - [ ] 既存エントリの template_name 編集
 - [ ] Streak "休みの日"(1日スキップでリセットしない)
 - [ ] エントリの JSON / Markdown エクスポート
 - [ ] `docs/WORLDVIEW.md` 独立(ADR-019 の operational reference 化)
 
-### Out of scope
+### スコープ外
 - カスタムテンプレート作成(v1.1 へ持ち越し)
 - プッシュ通知(v1.1 へ持ち越し)
 - 音声入力
@@ -66,7 +66,7 @@
 
 ゴール:登録解放、有料転換を検証。
 
-### Must-have
+### 必須
 - [ ] Stripe 統合(Free / Pro / Premium プラン)
 - [ ] カスタムテンプレート作成(独自の scaffolding 質問を定義、AI follow-up は共通)
 - [ ] Web Push 通知(PWA)
@@ -75,7 +75,7 @@
 - [ ] 改良メールテンプレート(Resend 統合)
 - [ ] 基本アナリティクス(Plausible or self-hosted)
 
-### Nice-to-have
+### あると嬉しい
 - [ ] Obsidian エクスポート(Premium 機能)
 - [ ] 年額プランオプション
 - [ ] リファラルシステム

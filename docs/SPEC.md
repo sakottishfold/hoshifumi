@@ -1,7 +1,7 @@
 # 技術仕様: ほしふみ
 
-> Implementation Specification
-> Last updated: 2026-05-16
+> 実装仕様書
+> 最終更新: 2026-05-16
 > 改名履歴:みっつ → いとなみ(2026-05-14, ADR-015) → ほしふみ(2026-05-16, ADR-018)
 >
 > ⚠️ 2026-05-16 時点で、実装は ADR-013/014(Q1 身体感覚、Q3 自由記述 closure)を反映しているが、**AI follow-up ステップ(ADR-012)と past-entry callback(ADR-017)は未実装**。以下のセクションで日次フローを記述する箇所は AI 統合後の目標設計を前提にしている部分があるので注意。
@@ -192,7 +192,7 @@ Position 3 が AI 生成質問になり(テキストは answer row に格納)、
 
 Basic 以外のテンプレートを v1.0 で追加。同じ構造(固定 Q1 タップ + 固定 Q2 自由記述 + AI follow-up + 固定 Q3 closure)で、文言と scaffolding の角度(仕事、子育て、クリエイター等)が異なる。具体的なテンプレートセットは Phase 0 セルフテスト後に決定。
 
-### Universal rule
+### 普遍ルール
 - Position 1(固定):5タップの定量 ─ 身体感覚 or ドメイン固有スケール、分析に使う
 - Position 2(固定):定性自由記述 ─ AI に渡す「今日何があったか」の raw 入力
 - AI follow-up(動的、v1.0 目標):Position 1+2 から生成される個別化された「why/what」質問1つ
@@ -200,7 +200,7 @@ Basic 以外のテンプレートを v1.0 で追加。同じ構造(固定 Q1 タ
 
 ## 4. 入力タイプ仕様
 
-| Type | 格納カラム | UI | メモ |
+| 型 | 格納カラム | UI | メモ |
 |---|---|---|---|
 | `mood_5` | value_number (1-5) | 5タップ | タップのみ。現在は身体感覚として使用(ADR-013)、widget 名は後方互換で維持。MoonPhase コンポーネントで月相描画 |
 | `scale_5` | value_number (1-5) | 5タップ(数字) | タップのみ |
@@ -229,7 +229,7 @@ Basic 以外のテンプレートを v1.0 で追加。同じ構造(固定 Q1 タ
 - 開発:Supabase 標準 SMTP(rate-limit あり、スパム判定リスク)
 - 本番:ローンチ前に Resend / Postmark に移行(Supabase Auth 設定)
 
-## 6. コア Server Actions
+## 6. 主要 Server Actions
 
 ### `submitEntry(input: SubmitEntryInput)`
 
@@ -297,7 +297,7 @@ async function selectCallbackEntry(): Promise<{
   → 実装:`submitEntry` 時にだけ再評価、ページロードごとに再評価しない
 - タイムゾーン:全計算は JST
 
-## 8. Past-Entry Callback(γ stage model、v0+)
+## 8. 過去エントリ callback(γ stage モデル、v0+)
 
 > **ADR-017** に基づく。`/today/done` で「向こうから来る」surfacing 軸を実現する。**ADR-016**(AI は引用係、解釈しない)に準拠 ─ Phase 0 実装は AI 呼び出しを含まないが、原則は適用される。
 
@@ -309,7 +309,7 @@ async function selectCallbackEntry(): Promise<{
 
 ### Stage アンロックスケジュール
 
-| Stage | 書いた回数のしきい値 | 対象「N entries ago」範囲 | 表示ラベル |
+| ステージ | 書いた回数のしきい値 | 対象「N entries ago」範囲 | 表示ラベル |
 |---|---|---|---|
 | 1 | ちょうど 5 回(deterministic) | 2-4 entries ago | 「数日前のあなた」 |
 | 2 | 12-15 回(範囲内で初回 trigger) | 7-10 entries ago | 「もう少し前のあなた」 |
@@ -324,7 +324,7 @@ Stage 2 以降は *対象 entry-count ウィンドウ内の最初の eligible da
 
 Anniversary callback は **カレンダー時間ベース**(entry-count ベースじゃない):`entry_date = today − 365 days` のカレンダー日に発火する。その日に該当する場合、確率的な refire を上書きする。
 
-### Cool-down と refire
+### クールダウンと再発火
 
 **何らかの callback が発火した後**(stage か refire か関係なく)、`last_callback_at = now` を set。
 
@@ -354,7 +354,7 @@ ALTER TABLE profiles
 
 Stage の入り口は `unlocked_stage` と現エントリ数から deterministic に計算可能だが、`unlocked_stage` を明示的に保存しておくことで、後から stage しきい値を調整したときの曖昧さを避ける。
 
-### UI(ハイレベル)
+### UI(概要)
 
 streak の下に小さなカード。形(デザインで詰める):
 
@@ -441,6 +441,7 @@ Vercel Cron:`0 0 1 * *`(毎月1日、00:00 UTC = 09:00 JST)
 ## 10. データバリデーション
 
 ### クライアント側
+
 - Email:HTML5 type="email"
 - 自由記述:最大2000文字、1500文字でソフトワーニング
 - 必須フィールドは質問ステップ進行前にチェック
@@ -482,11 +483,11 @@ Vercel Cron:`0 0 1 * *`(毎月1日、00:00 UTC = 09:00 JST)
 - 自由記述は as-is で格納(どこでも HTML レンダリングしない、常にプレーンテキスト表示)
 - ユーザーコンテンツのパスで `dangerouslySetInnerHTML` 禁止
 
-### Secrets
+### シークレット
 - API キーは client に送らない
 - `SUPABASE_SERVICE_ROLE_KEY` はサーバー側でのみ使用、client コンポーネントで import 禁止
 
-### Rate limiting
+### レートリミット
 - Magic Link 送信:Supabase デフォルト(60s クールダウン)
 - Server Actions:Vercel デフォルト(MVP では rate limit なし、v1.1 で upstash を追加)
 

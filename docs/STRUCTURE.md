@@ -1,7 +1,7 @@
 # プロジェクト構成
 
 > ほしふみのファイル/ディレクトリ構造、各部の役割、依存関係。
-> Last updated: 2026-05-16
+> 最終更新: 2026-05-16
 
 ---
 
@@ -111,7 +111,6 @@ hoshifumi/                             # 物理フォルダ名(2026-05-16 に mi
 │   ├── ROADMAP.md                     # バージョン別スコープ(v0/Phase 0/v1.0/v1.1+)
 │   ├── DEPLOYMENT.md                  # Vercel / Supabase デプロイ手順
 │   ├── API-REFERENCE.md               # Server Action / 型 / コンポーネント早見
-│   ├── HANDOFF.md                     # Claude Code への引き継ぎ書
 │   ├── FRICTION-LOG.md                # Phase 0 セルフテストの摩擦記録(テンプレ)
 │   ├── WORLDVIEW.md                   # 世界観(yes/no list 統合)
 │   └── STRUCTURE.md                   # このファイル
@@ -178,7 +177,7 @@ app/globals.css(独立、@import "tailwindcss" のみ)
 
 ---
 
-## どこに何を置くか(新規追加の guideline)
+## どこに何を置くか(新規追加の指針)
 
 | 追加するもの | 置き場所 | 例 |
 |---|---|---|
@@ -193,7 +192,7 @@ app/globals.css(独立、@import "tailwindcss" のみ)
 | 新しい ADR | `docs/DECISIONS.md` に **追記**(既存変更禁止) | `## ADR-020: ...` |
 | 新しい仕様セクション | `docs/SPEC.md` の該当箇所に追記 | §9 の後に §10 として |
 
-詳細な設計パターン(Server Action / Form の書き方など)は **`docs/HANDOFF.md`** の「v0 で確立された設計パターン」を参照。
+Server Action / Form など主要パターンの最小例は `CLAUDE.md`、API 早見は `docs/API-REFERENCE.md` を参照。実装は `lib/server-actions/entries.ts` が canonical な雛形。
 
 ---
 
@@ -204,4 +203,4 @@ app/globals.css(独立、@import "tailwindcss" のみ)
 - **世界観 / NG リスト** → `docs/WORLDVIEW.md`
 - **デプロイ手順** → `docs/DEPLOYMENT.md`
 - **API 早見表** → `docs/API-REFERENCE.md`
-- **Claude Code 引き継ぎ** → `docs/HANDOFF.md`
+- **Claude Code 操作ガイド** → ルートの `CLAUDE.md`(セッションごとに自動 inject、HANDOFF.md は ADR-020 で廃止)

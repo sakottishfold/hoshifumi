@@ -1,9 +1,9 @@
-# Next Actions
+# ネクストアクション
 
 > 今やる / 次やる / 検討する を一箇所にまとめた living TODO。
-> ADR の未解決の論点 + ROADMAP の must-have + HANDOFF / SPEC / PRD の open items を統合。
+> ADR の未解決の論点 + ROADMAP の must-have + SPEC / PRD の open items を統合。
 > 各項目に **出典** を併記、詳細は元 doc を参照。
-> Last updated: 2026-05-16
+> 最終更新: 2026-05-16
 
 ---
 
@@ -26,7 +26,7 @@
 
 Phase 0 終了して、β に向けた本格実装。
 
-### コア機能(Must-have)
+### コア機能(必須)
 - [ ] **AI follow-up question** 実装 ─ `ADR-012` / `SPEC.md` §3
 - [ ] **DB スキーマ migration** ─ 1ファイルにまとめて:
   - `answers.question_position` CHECK を 1..3 → 1..5(or 削除)
@@ -45,7 +45,7 @@ Phase 0 終了して、β に向けた本格実装。
 - [ ] **オンボーディング**(Welcome → テンプレ選択 → 最初のエントリ)
 - [ ] **プライバシーポリシー / 利用規約** ページ ─ `PRD.md` §8
 
-### Nice-to-have
+### あると嬉しい
 - [ ] エントリの template_name 編集
 - [ ] Streak "休みの日"(1日スキップでリセットしない)
 - [ ] JSON / Markdown エクスポート
@@ -84,7 +84,7 @@ Phase 0 終了して、β に向けた本格実装。
 
 ---
 
-## 🌕 後でやる / Backlog
+## 🌕 後でやる / バックログ
 
 優先度低、ただし忘れない用。
 
@@ -110,13 +110,13 @@ Phase 0 終了して、β に向けた本格実装。
 - [ ] **マルチターン AI 対話**(v1.0 の single follow-up を超えた深いやり取り、Premium) ─ `ROADMAP.md` v2.0
 
 ### 品質・改善
-- [ ] **Vitest / Playwright 導入**(v1.1 launch 前 happy-path E2E) ─ `HANDOFF.md`
+- [ ] **Vitest / Playwright 導入**(v1.1 launch 前 happy-path E2E) ─ `CLAUDE.md` Q&A「Add tests?」
 - [ ] **WORLDVIEW.md にスクショ付き anti-pattern 例追加**(具体例で yes/no の判断が早くなる)
 - [ ] **月相 SVG phase 3 の半月を更に磨く**(現状で許容範囲、精度上げる場合はベクター調整)
 - [ ] **Error tracking 導入**(Sentry or Vercel) ─ `DEPLOYMENT.md` 本番チェックリスト
 - [ ] **アナリティクス導入**(Plausible / Vercel Analytics) ─ `DEPLOYMENT.md` 本番チェックリスト
 
-### Doc 補完(壁打ち済み、未着手)
+### ドキュメント補完(壁打ち済み、未着手)
 - [ ] **`docs/AI-PROMPTS.md`** ─ AI follow-up / 月次レポート プロンプトカタログ(ADR-012 着手時に必須、ADR-016 準拠チェックの枠組み込み)
 - [ ] **`docs/COPY.md`** ─ マイクロコピー集(画面 × 状態の approved copy 一覧、WORLDVIEW のトーン原則を具体化)
 - [x] ~~**`docs/MOTION.md`**(または WORLDVIEW.md 拡張)─ 秒数・easing curve まで具体化したモーション仕様~~ **2026-05-16 完了** ─ `docs/MOTION.md` 作成、WORLDVIEW.md Motion セクションは要点のみに短縮 + MOTION.md への link 化
@@ -135,4 +135,4 @@ Phase 0 終了して、β に向けた本格実装。
 - **完了したら** ~~取り消し線~~ + 完了日を併記。1〜2セッション残して、その後削除して履歴を ADR に逃がす
 - **新規 NA が出たら** 適切なフェーズセクションに追加(出典 doc / ADR 番号を併記)
 - **大物の論点**(複数 ADR や複数機能に影響するもの)が出たら、新規 ADR を立てて open question を移動 → 本 NA リストはその ADR を参照
-- **このファイルは canonical source**:他 doc(ROADMAP / HANDOFF / 各 ADR の open questions)が更新されたら、本 NA も同期する
+- **このファイルは canonical source**:他 doc(ROADMAP / 各 ADR の open questions)が更新されたら、本 NA も同期する
