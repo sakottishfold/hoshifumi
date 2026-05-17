@@ -59,11 +59,50 @@
 
 | プレフィックス | 例 | 用途 |
 |---|---|---|
-| `screen-` | `screen-today`、`screen-today-done`、`screen-calendar` | 既存または計画中の画面 |
-| `flow-` | `flow-onboarding`、`flow-daily-ritual` | 複数画面にまたがるユーザージャーニー |
-| `component-` | `component-callback-card`、`component-buttons` | コンポーネント単体・variants |
-| `idea-` | `idea-callback-glow` | まだ採用してない試案、破棄候補 |
-| `archive-` | `archive-mittsu-v0` | 過去案、参考用に保存 |
+| `screen-flow` | screen frames(以下のフレーム命名規則参照)を集める | 既存または計画中の画面 |
+| `component-library` | コンポーネント単体・variants を集める | 再利用部品 |
+| `flow-{name}` | `flow-onboarding`、`flow-daily-ritual` | 複数画面にまたがるユーザージャーニー |
+| `idea-{topic}` | `idea-callback-glow` | まだ採用してない試案、破棄候補 |
+| `archive-{label}` | `archive-mittsu-v0` | 過去案、参考用に保存 |
+
+### フレーム命名(`.pen` 内の screen / variant 単位)
+
+**パターン**: `{screen}_{state}`(セパレータは `_` のみ、`screen-` プレフィックス禁止)
+
+- `screen` 部: kebab-case(例:`today`、`today-done`、`calendar-detail`)
+- `state` 部: kebab-case か単語(例:`initial`、`sent`、`q1`、`with-callback`、`no-callback`、`empty`、`default`)
+- **単一状態の画面でも `_default` を付ける**(統一感維持、後の variant 追加が楽)
+
+ほしふみの確定マッピング:
+
+| 旧名 | 新名 |
+|---|---|
+| `screen-login`(初期表示)| `login_initial` |
+| `screen-login-sent`(メール送信後)| `login_sent` |
+| `screen-today-q1` | `today_q1` |
+| `screen-today-q2` | `today_q2` |
+| `screen-today-q3` | `today_q3` |
+| `screen-today-done-callback` | `today-done_with-callback` |
+| `screen-today-done-nocallback` | `today-done_no-callback` |
+| `screen-calendar` | `calendar_with-entries` |
+| `screen-calendar-empty` | `calendar_empty` |
+| `screen-calendar-detail` | `calendar-detail_default` |
+| `screen-settings` | `settings_default` |
+
+### フレーム配置規律
+
+`.pen` 内でフレームを並べるときの原則:
+
+- **オーバーラップ禁止**:必ず空白を挟む
+- **一定間隔**:水平・垂直とも **100px** ギャップ(`--frame-gap` トークンで定義、配置時に必ず参照)
+- **配置順**:左から右 / 上から下に「ユーザーが画面を歩く順序」で並べる
+  1. `login_initial` → `login_sent`
+  2. `today_q1` → `today_q2` → `today_q3`
+  3. `today-done_with-callback` / `today-done_no-callback`(同じ列に並べる)
+  4. `calendar_with-entries` / `calendar_empty`(同じ列)
+  5. `calendar-detail_default`
+  6. `settings_default`
+- 並びそのものが見えるジャーニーマップになる
 
 ### Git 管理
 
@@ -93,26 +132,68 @@
 
 ファイルがなければ `mcp__pencil__open_document("new")` で新規作成。既存なら `open_document(path)`。
 
-### 2. デザイン token の流し込み(初回のみ)
+### 2. デザイントークンの網羅的流し込み(初回のみ)
 
-`set_variables` で `docs/DESIGN.md` §2 の color、§3 の typography を Pencil 変数として登録する:
+色だけで終わらせない。DESIGN.md にある **全カテゴリの reusable token** を `set_variables` で投入。ad-hoc 値を `batch_design` リテラルで書くのは禁止。
+
+Pencil 制約: カラーは **hex のみ**(OKLCH 不可、DESIGN.md からの hex 近似を使う)。`fontFamily` はリテラル文字列(`$` 変数バインド不可)。
+
+ほしふみで定義する完全リスト:
 
 ```
-mcp__pencil__set_variables で:
-  --background:      oklch(12% 0.04 280)
-  --foreground:      oklch(94% 0.02 75)
-  --muted-foreground: oklch(67% 0.025 75)
-  --card:            oklch(18% 0.04 280)
-  --border:          oklch(32% 0.03 280)
-  --primary:         oklch(83% 0.10 80)
-  --primary-foreground: oklch(18% 0.04 280)
-  --font-primary:    "Zen Maru Gothic"
-  --font-secondary:  "Zen Maru Gothic"
-  --radius-m:        16
-  --radius-pill:     9999
+// カラー(DESIGN.md §2、OKLCH → hex 近似)
+--bg-body:           #0a0a1a  // oklch(12% 0.04 280)
+--bg-neutral-50:     #15152a  // oklch(18% 0.04 280)、elevated card / input
+--bg-neutral-100:    #1d1d36  // oklch(24% 0.04 280)、hover
+--bg-primary-50:     #1f1d18  // oklch(22% 0.03 75)、highlighted card
+--border-neutral-200: #46455a // oklch(32% 0.03 280)
+--border-primary-100: #4a3f2a // oklch(30% 0.05 75)
+--text-neutral-900:  #f4eddc  // oklch(94% 0.02 75)、本文
+--text-neutral-800:  #e8e0cd  // oklch(89% 0.02 75)、本文 strong
+--text-neutral-700:  #d8cdb8  // oklch(83% 0.02 75)、secondary
+--text-neutral-600:  #c4b9a4  // oklch(76% 0.02 75)、補助
+--text-neutral-500:  #a99e89  // oklch(67% 0.025 75)、labels
+--text-neutral-400:  #8b8273  // oklch(55% 0.025 75)、tertiary muted
+--primary-500:       #f0d4a0  // oklch(83% 0.10 80)、CTA bg / 月色
+--primary-600:       #c79c5e  // oklch(73% 0.12 75)、hover / 強調テキスト
+--primary-700:       #f0c98a  // oklch(85% 0.13 75)、アクセントテキスト
+
+// タイポグラフィ サイズ(DESIGN.md §3、Tailwind 準拠)
+--font-xs:   12
+--font-sm:   14
+--font-base: 16
+--font-lg:   18
+--font-xl:   20
+--font-2xl:  24
+--font-3xl:  30
+--font-4xl:  36
+
+// 角丸(DESIGN.md §5)
+--radius-xl:   12  // 入力 / 小ボタン
+--radius-2xl:  16  // カード / 大ボタン
+--radius-full: 9999  // チップ / アイコンボタン
+
+// スペーシング(DESIGN.md §5、Tailwind ベース)
+--space-2: 8
+--space-3: 12
+--space-4: 16
+--space-6: 24
+--space-8: 32
+
+// レイアウト定数
+--page-max-width: 448  // max-w-md
+--page-px:        24   // ページ wrapper の左右 padding
+
+// フレーム配置(本 doc 規律)
+--frame-gap: 100  // .pen 内のフレーム間隔(水平・垂直とも)
+
+// フォントは文字列リテラル(変数バインド不可、参考に残す)
+--font-primary:    "Zen Maru Gothic"  // 実使用時は fontFamily: "Zen Maru Gothic" を直書き
 ```
 
-これで以降の `batch_design` で `$--primary` 等のトークン参照が機能する。
+これで以降の `batch_design` で `$--primary-500` 等のトークン参照が機能する。
+
+途中で「このサイズも token 化したい」が出てきたら、その時点で `set_variables` を再呼び出して追加してから使う ─ ad-hoc 値で「とりあえず」を残さない。
 
 ### 3. screen / component 作成
 
@@ -200,17 +281,24 @@ moon=I(container, {type: "icon_font", iconFontFamily: "Material Symbols Rounded"
 - ❌ "Welcome back!" → ✅ 「おかえり。今夜も。」
 - ❌ "3-day streak!" → ✅ 「3つ、灯った」
 
-### 世界観チェック(Pencil 完成後)
+### 世界観チェック + 規律チェック(Pencil 完成後)
 
 毎回 export 前に以下を見直す:
 
-- [ ] 背景は deep indigo(`$--background` ≒ #0a0a1a)
+**世界観:**
+- [ ] 背景は deep indigo(`$--bg-body` = `#0a0a1a`)
 - [ ] 純白・純黒 / saturated ネオン / 派手 contrast を使ってない
 - [ ] フォントは Zen Maru Gothic 系(Hiragino Maru でも可)
-- [ ] 角丸は `radius-m`(16px)以上
+- [ ] 角丸は `--radius-xl`(12px)以上
 - [ ] システム絵文字(🔥 ☀ 🌧 等)を直貼りしてない
 - [ ] CTA 配置・コピー・密度が DESIGN.md §4 のパターンと一致
 - [ ] AI 関連要素は ADR-016 引用係原則準拠(diagnosis テキストなし等)
+
+**トークン・フレーム規律:**
+- [ ] 全色 / 全 size / 全 radius / 全 spacing がトークン参照、ad-hoc 値ゼロ
+- [ ] フレーム名が **`{screen}_{state}` パターン**(上記マッピング)に合致
+- [ ] フレーム同士が重なってない、`--frame-gap`(100px)で並んでる
+- [ ] フレーム並び順がユーザージャーニー順
 
 ---
 

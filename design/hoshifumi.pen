@@ -1576,8 +1576,8 @@
       "type": "frame",
       "id": "ua4c4",
       "x": 0,
-      "y": 2600,
-      "name": "screen-login",
+      "y": 2882,
+      "name": "login_initial",
       "reusable": true,
       "clip": true,
       "width": 390,
@@ -1753,9 +1753,9 @@
     {
       "type": "frame",
       "id": "pNbEZ",
-      "x": 454,
-      "y": 2600,
-      "name": "screen-login-sent",
+      "x": 490,
+      "y": 2882,
+      "name": "login_sent",
       "reusable": true,
       "clip": true,
       "width": 390,
@@ -1905,9 +1905,9 @@
     {
       "type": "frame",
       "id": "b7Za5M",
-      "x": 908,
-      "y": 2600,
-      "name": "screen-today-q1",
+      "x": 0,
+      "y": 3826,
+      "name": "today_q1",
       "reusable": true,
       "clip": true,
       "width": 390,
@@ -2231,9 +2231,9 @@
     {
       "type": "frame",
       "id": "W2m3x",
-      "x": 1362,
-      "y": 2600,
-      "name": "screen-today-q2",
+      "x": 490,
+      "y": 3826,
+      "name": "today_q2",
       "reusable": true,
       "clip": true,
       "width": 390,
@@ -2400,9 +2400,9 @@
     {
       "type": "frame",
       "id": "eBNDY",
-      "x": 0,
-      "y": 3508,
-      "name": "screen-today-q3",
+      "x": 980,
+      "y": 3826,
+      "name": "today_q3",
       "reusable": true,
       "clip": true,
       "width": 390,
@@ -2569,9 +2569,9 @@
     {
       "type": "frame",
       "id": "iPPPi",
-      "x": 454,
-      "y": 3508,
-      "name": "screen-today-done-callback",
+      "x": 0,
+      "y": 4770,
+      "name": "today-done_with-callback",
       "reusable": true,
       "clip": true,
       "width": 390,
@@ -2738,9 +2738,9 @@
     {
       "type": "frame",
       "id": "W0ZcE",
-      "x": 908,
-      "y": 3508,
-      "name": "screen-today-done-nocallback",
+      "x": 490,
+      "y": 4770,
+      "name": "today-done_no-callback",
       "reusable": true,
       "clip": true,
       "width": 390,
@@ -2889,9 +2889,9 @@
     {
       "type": "frame",
       "id": "ROBoq",
-      "x": 1362,
-      "y": 3508,
-      "name": "screen-calendar",
+      "x": 0,
+      "y": 5970,
+      "name": "calendar_with-entries",
       "reusable": true,
       "clip": true,
       "width": 390,
@@ -4052,9 +4052,9 @@
     {
       "type": "frame",
       "id": "lKA0b",
-      "x": 0,
-      "y": 4480,
-      "name": "screen-calendar-empty",
+      "x": 490,
+      "y": 5970,
+      "name": "calendar_empty",
       "reusable": true,
       "clip": true,
       "width": 390,
@@ -4195,9 +4195,9 @@
     {
       "type": "frame",
       "id": "ddWBB",
-      "x": 454,
-      "y": 4480,
-      "name": "screen-calendar-detail",
+      "x": 0,
+      "y": 6914,
+      "name": "calendar-detail_default",
       "reusable": true,
       "clip": true,
       "width": 390,
@@ -4451,9 +4451,9 @@
     {
       "type": "frame",
       "id": "z18E8",
-      "x": 908,
-      "y": 4480,
-      "name": "screen-settings",
+      "x": 0,
+      "y": 7858,
+      "name": "settings_default",
       "reusable": true,
       "clip": true,
       "width": 390,
@@ -4929,6 +4929,134 @@
     "red-600": {
       "type": "color",
       "value": "#dc2626"
+    },
+    "bg-body": {
+      "type": "color",
+      "value": "#0a0a1a"
+    },
+    "bg-neutral-100": {
+      "type": "color",
+      "value": "#1d1d36"
+    },
+    "bg-neutral-50": {
+      "type": "color",
+      "value": "#15152a"
+    },
+    "bg-primary-50": {
+      "type": "color",
+      "value": "#1f1d18"
+    },
+    "border-neutral-200": {
+      "type": "color",
+      "value": "#46455a"
+    },
+    "border-primary-100": {
+      "type": "color",
+      "value": "#4a3f2a"
+    },
+    "font-2xl": {
+      "type": "number",
+      "value": 24
+    },
+    "font-3xl": {
+      "type": "number",
+      "value": 30
+    },
+    "font-4xl": {
+      "type": "number",
+      "value": 36
+    },
+    "font-base": {
+      "type": "number",
+      "value": 16
+    },
+    "font-lg": {
+      "type": "number",
+      "value": 18
+    },
+    "font-primary": {
+      "type": "string",
+      "value": "Zen Maru Gothic"
+    },
+    "font-sm": {
+      "type": "number",
+      "value": 14
+    },
+    "font-xl": {
+      "type": "number",
+      "value": 20
+    },
+    "font-xs": {
+      "type": "number",
+      "value": 12
+    },
+    "frame-gap": {
+      "type": "number",
+      "value": 100
+    },
+    "page-max-width": {
+      "type": "number",
+      "value": 448
+    },
+    "page-px": {
+      "type": "number",
+      "value": 24
+    },
+    "radius-2xl": {
+      "type": "number",
+      "value": 16
+    },
+    "radius-full": {
+      "type": "number",
+      "value": 9999
+    },
+    "radius-xl": {
+      "type": "number",
+      "value": 12
+    },
+    "space-2": {
+      "type": "number",
+      "value": 8
+    },
+    "space-3": {
+      "type": "number",
+      "value": 12
+    },
+    "space-4": {
+      "type": "number",
+      "value": 16
+    },
+    "space-6": {
+      "type": "number",
+      "value": 24
+    },
+    "space-8": {
+      "type": "number",
+      "value": 32
+    },
+    "text-neutral-400": {
+      "type": "color",
+      "value": "#8b8273"
+    },
+    "text-neutral-500": {
+      "type": "color",
+      "value": "#a99e89"
+    },
+    "text-neutral-600": {
+      "type": "color",
+      "value": "#c4b9a4"
+    },
+    "text-neutral-700": {
+      "type": "color",
+      "value": "#d8cdb8"
+    },
+    "text-neutral-800": {
+      "type": "color",
+      "value": "#e8e0cd"
+    },
+    "text-neutral-900": {
+      "type": "color",
+      "value": "#f4eddc"
     }
   }
 }
