@@ -23,10 +23,11 @@ ADR-019 世界観「星が積もる」を Phase 0 で実機検証するため、
 - [ ] **ローカル動作確認** ─ `scripts/seed-callback.sql` で過去4エントリ投入 → 5本目 submit → Stage 1 deterministic 発火を確認(off-by-one バグ炙り出し)
 
 ### デプロイ
-- [ ] **Supabase 本番プロジェクト作成 + 初期 migration** ─ `DEPLOYMENT.md` Step 1(migration 2ファイル: `20260510000000_initial.sql` + `20260517000000_callback_state.sql`)
-- [ ] **Vercel デプロイ** ─ `DEPLOYMENT.md` Step 2
-- [ ] **メール配信設定** ─ Resend 推奨、当面 Supabase 標準でも可 ─ `DEPLOYMENT.md` §1.5
+- [x] ~~**Supabase 本番プロジェクト作成 + 初期 migration**~~ **2026-05-17 完了** ─ `uytlmbhkxtgdvazhvjxy.supabase.co`、東京リージョン、migration 2 ファイル適用済み
+- [x] ~~**Vercel デプロイ**~~ **2026-05-17 完了** ─ `https://hoshifumi.vercel.app`、Deployment Protection 解除済み、env 5 件投入
+- [x] ~~**メール配信設定**~~ **2026-05-17 Google OAuth 採用で迂回** ─ Supabase デフォルト rate limit(2/h)が Phase 0 ですら使い物にならず、Resend ドメイン未取得のため Google OAuth を主動線に。Magic Link は backup として残存。Resend + 独自ドメインは v1.0 launch 前に着手(ADR 化候補)
 - [ ] **iOS Safari にホーム追加してリマインダーセット** ─ `DEPLOYMENT.md` Step 5, 7
+- [ ] **本番で Day 1 エントリ submit + FRICTION-LOG.md 初回記録**
 
 ### Phase 0 本番(30日)
 - [ ] **30日連続使用** ─ `ROADMAP.md` Phase 0 / `PRD.md` §7
