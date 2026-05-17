@@ -26,7 +26,8 @@ ADR-019 世界観「星が積もる」を Phase 0 で実機検証するため、
 - [x] ~~**Supabase 本番プロジェクト作成 + 初期 migration**~~ **2026-05-17 完了** ─ `uytlmbhkxtgdvazhvjxy.supabase.co`、東京リージョン、migration 2 ファイル適用済み
 - [x] ~~**Vercel デプロイ**~~ **2026-05-17 完了** ─ `https://hoshifumi.vercel.app`、Deployment Protection 解除済み、env 5 件投入
 - [x] ~~**メール配信設定**~~ **2026-05-17 Google OAuth 採用で迂回** ─ Supabase デフォルト rate limit(2/h)が Phase 0 ですら使い物にならず、Resend ドメイン未取得のため Google OAuth を主動線に。Magic Link は backup として残存。Resend + 独自ドメインは v1.0 launch 前に着手(ADR 化候補)
-- [ ] **iOS Safari にホーム追加してリマインダーセット** ─ `DEPLOYMENT.md` Step 5, 7
+- [x] ~~**iOS Safari にホーム追加**~~ **2026-05-17 完了** ─ ホーム画面に 🌒 アイコン追加、standalone モードで起動可能
+- [ ] **iOS カレンダーで 22:00 毎日リマインダー設定**(`DEPLOYMENT.md` Step 7)
 - [ ] **本番で Day 1 エントリ submit + FRICTION-LOG.md 初回記録**
 
 ### Phase 0 本番(30日)
