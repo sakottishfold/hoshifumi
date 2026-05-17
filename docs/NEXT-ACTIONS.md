@@ -148,7 +148,7 @@ Phase 0 終了して、β に向けた本格実装。
 - [x] ~~**`design/hoshifumi.pen`** 作成、`set_variables` で DESIGN.md のトークンを流し込む(初期セットアップ)~~ **2026-05-17 完了**
 - [x] ~~**`screen-today-done` + callback カードのモック**(ADR-017 open question を解く起点)~~ **2026-05-17 完了**(Phase 1 で `today-done_with-callback` / `today-done_no-callback` の2 variant 作成)
 - [x] ~~**Phase 1 whole-app design**~~ **2026-05-17 完了** ─ 29 components + 11 screens、`design/exports/2026-05-17-phase1-v2.png`
-- [ ] **トークン新旧並存の cleanup** ─ Phase 1 brush-up で旧命名(`neutral-50`、`body-bg`、`moon-amber` 等)と新命名(`bg-neutral-50`、`bg-body` 等)が並存。`replace_all_matching_properties` で一括 swap → 旧 token 削除。Phase 2 着手前に片付ける
+- [ ] **トークン新旧並存の cleanup**(部分完了、残作業あり) ─ Phase 1 brush-up で旧命名と新命名が並存。2026-05-17 に 3 token(`body-bg` / `neutral-50` / `neutral-100`)削除 + 42 swap 完了、残りは hex 不一致のため未着手。**正しいアプローチ**:`batch_design` の `U()` で `fillColor: {type: "ref", ref: "..."}` を 1 ノードずつ書く + phase 分割(set_variables 追加 → components rebind → screens rebind → 旧削除)。`replace_all_matching_properties` は variable binding swap には使えない(literal string 化される、検証済み)。`pencil --prompt` モードでの大規模 sweep は 30分超えるので避ける、`pencil --tasks json` 経路(未検証)か手動 phase 分割を推奨。Phase 2 着手前に片付ける。出典:`docs/PENCIL.md`「既知の落とし穴」
 - [ ] **`flow-daily-ritual`** ─ AI follow-up 込みの全フロー俯瞰(ADR-012 着手前、Phase 2)
 - [ ] **Phase 2 ─ 未実装画面**(Onboarding / AI follow-up / 月次レポート) ─ AI 系仕様(ADR-012 / ADR-016 月次スキーマ)固まり次第着手
 

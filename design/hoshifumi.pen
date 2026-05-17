@@ -8,7 +8,7 @@
       "y": 0,
       "name": "component-library",
       "width": 1600,
-      "fill": "$body-bg",
+      "fill": "$bg-body",
       "layout": "vertical",
       "gap": 48,
       "padding": 48,
@@ -54,7 +54,7 @@
               "type": "frame",
               "id": "vbM4i",
               "name": "moonSwatches",
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 16,
               "stroke": {
                 "align": "inside",
@@ -235,7 +235,7 @@
               "type": "frame",
               "id": "Ta5gf",
               "name": "btnSwatches",
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 16,
               "stroke": {
                 "align": "inside",
@@ -275,7 +275,7 @@
                       "type": "text",
                       "id": "seXvV",
                       "name": "btnPrimaryLbl",
-                      "fill": "$neutral-50",
+                      "fill": "$bg-neutral-50",
                       "content": "つぎへ",
                       "fontFamily": "Zen Maru Gothic",
                       "fontSize": 16,
@@ -303,7 +303,7 @@
                       "type": "text",
                       "id": "SyTJy",
                       "name": "btnPrimaryDLbl",
-                      "fill": "$neutral-50",
+                      "fill": "$bg-neutral-50",
                       "content": "つぎへ",
                       "fontFamily": "Zen Maru Gothic",
                       "fontSize": 16,
@@ -317,7 +317,7 @@
                   "name": "Button/Secondary",
                   "reusable": true,
                   "width": 240,
-                  "fill": "$neutral-50",
+                  "fill": "$bg-neutral-50",
                   "cornerRadius": 12,
                   "stroke": {
                     "align": "inside",
@@ -369,7 +369,7 @@
               "type": "frame",
               "id": "jmZqJ",
               "name": "cardSwatches",
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 16,
               "stroke": {
                 "align": "inside",
@@ -385,7 +385,7 @@
                   "name": "Card/Standard",
                   "reusable": true,
                   "width": 320,
-                  "fill": "$neutral-50",
+                  "fill": "$bg-neutral-50",
                   "cornerRadius": 16,
                   "stroke": {
                     "align": "inside",
@@ -463,7 +463,7 @@
                   "name": "Card/Empty",
                   "reusable": true,
                   "width": 320,
-                  "fill": "$neutral-50",
+                  "fill": "$bg-neutral-50",
                   "cornerRadius": 16,
                   "stroke": {
                     "align": "inside",
@@ -512,7 +512,7 @@
               "type": "frame",
               "id": "f7poc",
               "name": "inputSwatches",
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 16,
               "stroke": {
                 "align": "inside",
@@ -536,7 +536,7 @@
                       "name": "Input/Email-Empty",
                       "reusable": true,
                       "width": "fill_container",
-                      "fill": "$neutral-50",
+                      "fill": "$bg-neutral-50",
                       "cornerRadius": 12,
                       "stroke": {
                         "align": "inside",
@@ -565,7 +565,7 @@
                       "name": "Input/Email-Filled",
                       "reusable": true,
                       "width": "fill_container",
-                      "fill": "$neutral-50",
+                      "fill": "$bg-neutral-50",
                       "cornerRadius": 12,
                       "stroke": {
                         "align": "inside",
@@ -602,7 +602,7 @@
                           "id": "zo2wQ",
                           "name": "emailErrField",
                           "width": "fill_container",
-                          "fill": "$neutral-50",
+                          "fill": "$bg-neutral-50",
                           "cornerRadius": 12,
                           "stroke": {
                             "align": "inside",
@@ -653,7 +653,7 @@
                       "reusable": true,
                       "width": "fill_container",
                       "height": 140,
-                      "fill": "$neutral-50",
+                      "fill": "$bg-neutral-50",
                       "cornerRadius": 16,
                       "stroke": {
                         "align": "inside",
@@ -684,7 +684,7 @@
                       "reusable": true,
                       "width": "fill_container",
                       "height": 140,
-                      "fill": "$neutral-50",
+                      "fill": "$bg-neutral-50",
                       "cornerRadius": 16,
                       "stroke": {
                         "align": "inside",
@@ -715,7 +715,7 @@
                       "reusable": true,
                       "width": "fill_container",
                       "height": 140,
-                      "fill": "$neutral-50",
+                      "fill": "$bg-neutral-50",
                       "cornerRadius": 16,
                       "stroke": {
                         "align": "inside",
@@ -767,7 +767,7 @@
               "type": "frame",
               "id": "NL97x",
               "name": "dotsSwatches",
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 16,
               "stroke": {
                 "align": "inside",
@@ -915,7 +915,7 @@
               "type": "frame",
               "id": "gMZhD",
               "name": "streakSwatches",
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 16,
               "stroke": {
                 "align": "inside",
@@ -1027,7 +1027,7 @@
               "type": "frame",
               "id": "z9e4k",
               "name": "logoSwatches",
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 16,
               "stroke": {
                 "align": "inside",
@@ -1072,7 +1072,7 @@
                           "x": -7,
                           "y": 0,
                           "name": "logo20Cut",
-                          "fill": "$body-bg",
+                          "fill": "$bg-body",
                           "width": 20,
                           "height": 20
                         }
@@ -1125,7 +1125,7 @@
                           "x": -22,
                           "y": 0,
                           "name": "logo64Cut",
-                          "fill": "$body-bg",
+                          "fill": "$bg-body",
                           "width": 64,
                           "height": 64
                         }
@@ -1169,7 +1169,7 @@
               "type": "frame",
               "id": "oQBjf",
               "name": "moodHostFrame",
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 16,
               "stroke": {
                 "align": "inside",
@@ -1185,7 +1185,7 @@
                   "name": "MoodInput/Cell-Unselected",
                   "reusable": true,
                   "width": 72,
-                  "fill": "$neutral-50",
+                  "fill": "$bg-neutral-50",
                   "cornerRadius": 16,
                   "stroke": {
                     "align": "inside",
@@ -1260,7 +1260,7 @@
                           "x": 0,
                           "y": 0,
                           "name": "moonP3Mask",
-                          "fill": "$neutral-50",
+                          "fill": "$bg-neutral-50",
                           "width": 40,
                           "height": 80
                         }
@@ -1303,7 +1303,7 @@
               "type": "frame",
               "id": "TYjUE",
               "name": "hdrSwatches",
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 16,
               "stroke": {
                 "align": "inside",
@@ -1320,7 +1320,7 @@
                   "name": "AppHeader",
                   "reusable": true,
                   "width": 448,
-                  "fill": "$neutral-50",
+                  "fill": "$bg-neutral-50",
                   "stroke": {
                     "align": "inside",
                     "thickness": {
@@ -1368,7 +1368,7 @@
                               "x": -7,
                               "y": 0,
                               "name": "ahLogoCut",
-                              "fill": "$neutral-50",
+                              "fill": "$bg-neutral-50",
                               "width": 20,
                               "height": 20
                             }
@@ -1476,7 +1476,7 @@
               "type": "frame",
               "id": "IX3MM",
               "name": "cbSwatches",
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 16,
               "stroke": {
                 "align": "inside",
@@ -1582,7 +1582,7 @@
       "clip": true,
       "width": 390,
       "height": 844,
-      "fill": "$body-bg",
+      "fill": "$bg-body",
       "layout": "vertical",
       "children": [
         {
@@ -1635,7 +1635,7 @@
                       "x": -22,
                       "y": 0,
                       "name": "loginIconCut",
-                      "fill": "$body-bg",
+                      "fill": "$bg-body",
                       "width": 64,
                       "height": 64
                     }
@@ -1760,7 +1760,7 @@
       "clip": true,
       "width": 390,
       "height": 844,
-      "fill": "$body-bg",
+      "fill": "$bg-body",
       "layout": "vertical",
       "children": [
         {
@@ -1813,7 +1813,7 @@
                       "x": -22,
                       "y": 0,
                       "name": "lsentIconCut",
-                      "fill": "$body-bg",
+                      "fill": "$bg-body",
                       "width": 64,
                       "height": 64
                     }
@@ -1912,7 +1912,7 @@
       "clip": true,
       "width": 390,
       "height": 844,
-      "fill": "$body-bg",
+      "fill": "$bg-body",
       "layout": "vertical",
       "children": [
         {
@@ -2038,7 +2038,7 @@
                   "id": "wvgti",
                   "name": "t1M1",
                   "width": "fill_container",
-                  "fill": "$neutral-50",
+                  "fill": "$bg-neutral-50",
                   "cornerRadius": 16,
                   "stroke": {
                     "align": "inside",
@@ -2074,7 +2074,7 @@
                   "id": "t29zPJ",
                   "name": "t1M2",
                   "width": "fill_container",
-                  "fill": "$neutral-50",
+                  "fill": "$bg-neutral-50",
                   "cornerRadius": 16,
                   "stroke": {
                     "align": "inside",
@@ -2144,7 +2144,7 @@
                   "id": "CoCAS",
                   "name": "t1M4",
                   "width": "fill_container",
-                  "fill": "$neutral-50",
+                  "fill": "$bg-neutral-50",
                   "cornerRadius": 16,
                   "stroke": {
                     "align": "inside",
@@ -2179,7 +2179,7 @@
                   "id": "ZKTWk",
                   "name": "t1M5",
                   "width": "fill_container",
-                  "fill": "$neutral-50",
+                  "fill": "$bg-neutral-50",
                   "cornerRadius": 16,
                   "stroke": {
                     "align": "inside",
@@ -2238,7 +2238,7 @@
       "clip": true,
       "width": 390,
       "height": 844,
-      "fill": "$body-bg",
+      "fill": "$bg-body",
       "layout": "vertical",
       "children": [
         {
@@ -2357,7 +2357,7 @@
               "name": "t2TaWrap",
               "width": "fill_container",
               "height": 180,
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 16,
               "stroke": {
                 "align": "inside",
@@ -2407,7 +2407,7 @@
       "clip": true,
       "width": 390,
       "height": 844,
-      "fill": "$body-bg",
+      "fill": "$bg-body",
       "layout": "vertical",
       "children": [
         {
@@ -2526,7 +2526,7 @@
               "name": "t3TaWrap",
               "width": "fill_container",
               "height": 180,
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 16,
               "stroke": {
                 "align": "inside",
@@ -2576,7 +2576,7 @@
       "clip": true,
       "width": 390,
       "height": 1100,
-      "fill": "$body-bg",
+      "fill": "$bg-body",
       "layout": "vertical",
       "children": [
         {
@@ -2745,7 +2745,7 @@
       "clip": true,
       "width": 390,
       "height": 844,
-      "fill": "$body-bg",
+      "fill": "$bg-body",
       "layout": "vertical",
       "children": [
         {
@@ -2896,7 +2896,7 @@
       "clip": true,
       "width": 390,
       "height": 844,
-      "fill": "$body-bg",
+      "fill": "$bg-body",
       "layout": "vertical",
       "children": [
         {
@@ -4001,7 +4001,7 @@
                   "id": "rvaRl",
                   "name": "calSummaryCard",
                   "width": "fill_container",
-                  "fill": "$neutral-50",
+                  "fill": "$bg-neutral-50",
                   "cornerRadius": 12,
                   "stroke": {
                     "align": "inside",
@@ -4059,7 +4059,7 @@
       "clip": true,
       "width": 390,
       "height": 844,
-      "fill": "$body-bg",
+      "fill": "$bg-body",
       "layout": "vertical",
       "children": [
         {
@@ -4133,7 +4133,7 @@
               "id": "DAiZ5",
               "name": "ceEmptyCard",
               "width": "fill_container",
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 16,
               "stroke": {
                 "align": "inside",
@@ -4202,7 +4202,7 @@
       "clip": true,
       "width": 390,
       "height": 844,
-      "fill": "$body-bg",
+      "fill": "$bg-body",
       "layout": "vertical",
       "children": [
         {
@@ -4295,7 +4295,7 @@
               "id": "Fs9ER",
               "name": "cdSection1",
               "width": "fill_container",
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 16,
               "stroke": {
                 "align": "inside",
@@ -4348,7 +4348,7 @@
               "id": "qa5T6",
               "name": "cdSection2",
               "width": "fill_container",
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 16,
               "stroke": {
                 "align": "inside",
@@ -4388,7 +4388,7 @@
               "id": "X2miCM",
               "name": "cdSection3",
               "width": "fill_container",
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 16,
               "stroke": {
                 "align": "inside",
@@ -4458,7 +4458,7 @@
       "clip": true,
       "width": 390,
       "height": 844,
-      "fill": "$body-bg",
+      "fill": "$bg-body",
       "layout": "vertical",
       "children": [
         {
@@ -4530,7 +4530,7 @@
               "id": "x0xMPj",
               "name": "stProfileCard",
               "width": "fill_container",
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 16,
               "stroke": {
                 "align": "inside",
@@ -4568,7 +4568,7 @@
                   "name": "stProfileRows",
                   "clip": true,
                   "width": "fill_container",
-                  "fill": "$neutral-100",
+                  "fill": "$bg-neutral-100",
                   "cornerRadius": 12,
                   "layout": "vertical",
                   "gap": 1,
@@ -4578,7 +4578,7 @@
                       "id": "udzzS",
                       "name": "stProfRow1",
                       "width": "fill_container",
-                      "fill": "$neutral-50",
+                      "fill": "$bg-neutral-50",
                       "padding": [
                         12,
                         16
@@ -4612,7 +4612,7 @@
                       "id": "HiNhC",
                       "name": "stProfRow2",
                       "width": "fill_container",
-                      "fill": "$neutral-50",
+                      "fill": "$bg-neutral-50",
                       "padding": [
                         12,
                         16
@@ -4650,7 +4650,7 @@
               "id": "rXVwa",
               "name": "stNotifCard",
               "width": "fill_container",
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 16,
               "stroke": {
                 "align": "inside",
@@ -4688,7 +4688,7 @@
                   "name": "stNotifRows",
                   "clip": true,
                   "width": "fill_container",
-                  "fill": "$neutral-100",
+                  "fill": "$bg-neutral-100",
                   "cornerRadius": 12,
                   "layout": "vertical",
                   "gap": 1,
@@ -4698,7 +4698,7 @@
                       "id": "NShER",
                       "name": "stNotifRow1",
                       "width": "fill_container",
-                      "fill": "$neutral-50",
+                      "fill": "$bg-neutral-50",
                       "padding": [
                         12,
                         16
@@ -4732,7 +4732,7 @@
                       "id": "p2IKSl",
                       "name": "stNotifRow2",
                       "width": "fill_container",
-                      "fill": "$neutral-50",
+                      "fill": "$bg-neutral-50",
                       "padding": [
                         12,
                         16
@@ -4803,7 +4803,7 @@
               "id": "N1iddG",
               "name": "stLogout",
               "width": "fill_container",
-              "fill": "$neutral-50",
+              "fill": "$bg-neutral-50",
               "cornerRadius": 12,
               "stroke": {
                 "align": "inside",
