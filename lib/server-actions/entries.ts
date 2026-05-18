@@ -22,6 +22,12 @@ export async function submitEntry(input: SubmitEntryInput) {
 
   const entryDate = input.date ?? todayJST();
 
+  // ADR-008 worldview: 未来日への書き込みは禁止(issue #001)。
+  // 過去・今日は許可(retroactive journal 作成・編集の対応)。
+  if (entryDate > todayJST()) {
+    throw new Error("未来日は書けません");
+  }
+
   // entry upsert
   const { data: entry, error: entryError } = await supabase
     .from("entries")
