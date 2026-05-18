@@ -122,7 +122,7 @@ export async function selectCallbackEntry(): Promise<CallbackResult | null> {
   //    unlockAt for the first time. Stage 1 (5th entry) is the onboarding hook
   //    per SPEC §8.
   const unlockingStage = STAGES.find(
-    (s) => entryCount === s.unlockAt && s.stage > unlockedStage,
+    (s) => entryCount >= s.unlockAt && s.stage > unlockedStage,
   );
 
   if (unlockingStage) {
