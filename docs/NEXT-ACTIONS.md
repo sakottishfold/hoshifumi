@@ -46,7 +46,7 @@ ADR-019 世界観「星が積もる」を Phase 0 で実機検証するため、
 Phase 0 終了して、β に向けた本格実装。
 
 ### コア機能(必須)
-- [ ] **AI follow-up question** 実装 ─ `ADR-012` / `SPEC.md` §3(schema 側は callback migration に同梱済みで前準備完了)
+- [x] ~~**AI follow-up question** 実装~~ **2026-05-18 完了** ─ Gemini 2.0 Flash (ADR-021)、quote-back style (ADR-016)、blocking await + silent skip fallback。`lib/ai/` 抽象化基盤も同 spec で整備。spec: `docs/specs/2026-05-18-ai-followup-question-design.md`、plan: `docs/plans/2026-05-18-ai-followup-question.md`
 - [x] ~~**DB スキーマ migration**~~ **2026-05-17 完了** ─ `supabase/migrations/20260517000000_callback_state.sql`:
   - ~~`answers.question_position` CHECK を 1..3 → 1..5~~ ← 1..5 に緩和
   - ~~`answers.question_text` 列追加~~ ← 追加(Phase 0 未使用、ADR-012 forward-compat)
