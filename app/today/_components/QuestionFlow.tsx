@@ -62,7 +62,7 @@ export function QuestionFlow({ initialEntry, date, displayDate }: Props) {
       });
       if (result.success) {
         router.push(
-          `/today/done?streak=${result.streak.streak_days}`,
+          `/today/done?streak=${result.streak.streak_days}&phase=${result.bodyPhase}&total=${result.totalEntries}`,
         );
       }
     });
