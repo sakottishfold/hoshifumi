@@ -3,6 +3,7 @@
 > 今やる / 次やる / 検討する を一箇所にまとめた living TODO。
 > ADR の未解決の論点 + ROADMAP の must-have + SPEC / PRD の open items を統合。
 > 各項目に **出典** を併記、詳細は元 doc を参照。
+> 戦術レベル(ad-hoc バグ / 小機能要望 / 質問) は `issues/` に積む(`issues/README.md` 参照)。
 > 最終更新: 2026-05-17
 
 ---
