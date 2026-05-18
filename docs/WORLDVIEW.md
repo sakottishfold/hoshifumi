@@ -98,8 +98,10 @@
 
 ### モーション
 
-- **使う**: fade(opacity)、breath(slow scale 1.0 ↔ 1.02)、soft glow
+- **使う**: fade(opacity)、breath(slow scale 1.0 ↔ 1.02)、soft glow、bloom(opacity + scale 0→1、one-time)、glow-pulse(box-shadow breath、infinite)、fade-in-soft(opacity + 小 scale pop-in)
 - **使わない**: slide、bounce、spring、jump、shake、rotate、skeleton shimmer
+
+> 2026-05-18 追記:Star Bloom 機能(ADR-019、`docs/specs/2026-05-18-star-bloom-on-done-design.md`)で **bloom**(scale 0→1 + opacity 0→1、one-time)と **glow-pulse**(box-shadow breath、infinite)、**fade-in-soft**(opacity + 小 scale pop-in)を採用。位置移動なし・one-time(または光のゆらぎ)に限定されるため worldview「fade extended」として許容、slide / bounce / spring 禁止原則は維持。詳細は MOTION.md 参照。
 
 > 具体的な duration / easing / 用途別 motion 表 / `prefers-reduced-motion` 対応 / Tailwind 実装例 / anti-pattern 詳細リストは **`docs/MOTION.md`** を参照(本セクションは yes/no 要点のみ保持)。
 
