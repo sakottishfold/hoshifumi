@@ -40,10 +40,13 @@ export interface Entry {
 export interface Answer {
   id: string;
   entry_id: string;
-  question_position: 1 | 2 | 3;
+  /** 1=body sensation, 2=event free text, 3=tomorrow message, 4=ADR-012 AI follow-up answer */
+  question_position: 1 | 2 | 3 | 4;
   value_number: number | null;
   value_text: string | null;
   value_choice: string | null;
+  /** ADR-012: AI 生成質問本文(question_position=4 のときのみ非 null) */
+  question_text: string | null;
 }
 
 export interface EntryWithAnswers extends Entry {

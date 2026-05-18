@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { BASIC_TEMPLATE } from "@/lib/constants/template";
+import { BASIC_TEMPLATE, BODY_SENSATION_OPTIONS } from "@/lib/constants/template";
 import { submitEntry } from "@/lib/server-actions/entries";
 import { todayJST } from "@/lib/utils/date";
 import { MoodInput } from "./MoodInput";
 import { FreeTextInput } from "./FreeTextInput";
 import { ProgressDots } from "./ProgressDots";
 import { MoonPhase } from "@/components/MoonPhase";
+import { AIQuestionStep } from "./AIQuestionStep";
 import type { MoodOption, EntryWithAnswers } from "@/lib/types";
 
 interface Props {
@@ -36,14 +37,45 @@ export function QuestionFlow({ initialEntry, date, displayDate }: Props) {
     initialQ3?.value_text ?? initialQ3?.value_choice ?? "",
   );
 
+  // ADR-012 AI follow-up:Q2 完了後に AI step に入る、完了 or skip で Q3 へ
+  type AIStatus = "pending" | "active" | "done" | "skipped";
+  const initialAiStatus: AIStatus =
+    initialEntry?.answers?.some((a) => a.question_position === 4)
+      ? "done"
+      : "pending";
+  const [aiStatus, setAiStatus] = useState<AIStatus>(initialAiStatus);
+  const [aiQuestion, setAiQuestion] = useState<string | null>(
+    initialEntry?.answers?.find((a) => a.question_position === 4)
+      ?.question_text ?? null,
+  );
+  const [aiAnswer, setAiAnswer] = useState<string>(
+    initialEntry?.answers?.find((a) => a.question_position === 4)
+      ?.value_text ?? "",
+  );
+
   const questions = BASIC_TEMPLATE.questions;
   const isComplete = step >= questions.length;
 
   function next() {
+    // Q2 (step=1) 完了時、AI step が未到達なら AI に切替
+    if (step === 1 && aiStatus === "pending") {
+      setAiStatus("active");
+      return;
+    }
+    // それ以外は通常通り次 step
     if (step < questions.length) {
       setStep(step + 1);
     }
   }
+
+  // ADR-012:AI step の完了 callback。inline arrow だと AIQuestionStep の useEffect が
+  // 毎 render で re-fetch するので useCallback で stable identity に。
+  const handleAIComplete = useCallback((question: string | null, answer: string | null) => {
+    setAiQuestion(question);
+    setAiAnswer(answer ?? "");
+    setAiStatus(question === null ? "skipped" : "done");
+    setStep(2); // Q3 へ
+  }, []);
 
   function back() {
     if (step > 0) {
@@ -60,6 +92,8 @@ export function QuestionFlow({ initialEntry, date, displayDate }: Props) {
         bodySensation,
         freeText: freeText.trim(),
         tomorrowMessage: tomorrowMessage.trim(),
+        aiQuestion: aiQuestion ?? undefined,
+        aiAnswer: aiAnswer.trim() ? aiAnswer.trim() : undefined,
       });
       if (result.success) {
         // issue #001: 今日 submit は /today/done で bloom ceremony、
@@ -126,6 +160,33 @@ export function QuestionFlow({ initialEntry, date, displayDate }: Props) {
 
   const q = questions[step];
 
+  // AI step が active のとき、Q1/Q2/Q3 ではなく AIQuestionStep を render
+  if (aiStatus === "active") {
+    const bodyLabel =
+      BODY_SENSATION_OPTIONS.find((o) => o.value === bodySensation)?.label ??
+      "";
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={back}
+            className="text-neutral-500 disabled:invisible flex items-center gap-1"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <ProgressDots current={2} total={questions.length + 1} />
+          <div className="w-5" />
+        </div>
+
+        <AIQuestionStep
+          bodySensationLabel={bodyLabel}
+          freeText={freeText.trim()}
+          onComplete={handleAIComplete}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -142,6 +203,9 @@ export function QuestionFlow({ initialEntry, date, displayDate }: Props) {
 
       <div className="space-y-6 pt-4">
         <div className="space-y-2">
+          {step === 2 && aiStatus === "skipped" && (
+            <p className="text-xs text-neutral-500">今夜は静かに進みます</p>
+          )}
           <p className="text-sm text-neutral-500">{step + 1}つめ</p>
           <h2 className="text-xl font-medium text-neutral-900 leading-relaxed">
             {q.text}
