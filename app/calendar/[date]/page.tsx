@@ -152,6 +152,7 @@ function EntryDetail({
   const bodyAnswer = entry.answers?.find((a) => a.question_position === 1);
   const textAnswer = entry.answers?.find((a) => a.question_position === 2);
   const closureAnswer = entry.answers?.find((a) => a.question_position === 3);
+  const aiAnswer = entry.answers?.find((a) => a.question_position === 4);
 
   const body = BODY_SENSATION_OPTIONS.find(
     (m) => m.value === bodyAnswer?.value_number,
@@ -182,6 +183,24 @@ function EntryDetail({
           <p className="text-neutral-400">記録なし</p>
         )}
       </Section>
+
+      {/* ADR-012: AI follow-up question + 回答(pos 4)。Phase 0 entries には pos 4 がないので skip。 */}
+      {aiAnswer && (aiAnswer.question_text || aiAnswer.value_text) && (
+        <Section label="AI からの問い">
+          {aiAnswer.question_text && (
+            <p className="text-sm text-neutral-500 leading-relaxed mb-3 whitespace-pre-wrap">
+              {aiAnswer.question_text}
+            </p>
+          )}
+          {aiAnswer.value_text ? (
+            <p className="text-base text-neutral-800 leading-relaxed whitespace-pre-wrap">
+              {aiAnswer.value_text}
+            </p>
+          ) : (
+            <p className="text-neutral-400">記録なし</p>
+          )}
+        </Section>
+      )}
 
       <Section label="明日の自分にひとことだけ">
         {closureText ? (
