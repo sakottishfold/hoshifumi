@@ -1,14 +1,14 @@
 ---
 id: 001
 title: 過去日でジャーナル作成・編集
-status: open
+status: closed
 priority: medium
 type: feature
 opened: 2026-05-18
-closed: null
-related-spec: null
-related-plan: null
-related-commits: null
+closed: 2026-05-18
+related-spec: docs/specs/2026-05-18-past-date-journal-entry-design.md
+related-plan: docs/plans/2026-05-18-past-date-journal-entry.md
+related-commits: fff1108, 83487cb, 1cd1fbf, 6c2f710
 ---
 
 ## 背景
