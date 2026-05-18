@@ -21,6 +21,7 @@ ADR-019 世界観「星が積もる」を Phase 0 で実機検証するため、
   - 統合: `app/today/done/page.tsx` ─ streak と calendar Link の間に CallbackCard
   - 出典: `ADR-017` / `SPEC.md` §8
 - [ ] **ローカル動作確認** ─ `scripts/seed-callback.sql` で過去4エントリ投入 → 5本目 submit → Stage 1 deterministic 発火を確認(off-by-one バグ炙り出し)
+- [x] ~~**Star Bloom on /today/done 実装**~~ **2026-05-18 完了** ─ ヒーロー月相を今日の Q1 phase に置換、bloom + glow + milestone burst(5/15/25/35/100/365)演出。α 厳格(no slide/bounce)、`prefers-reduced-motion` で全 anim 無効。spec: `docs/specs/2026-05-18-star-bloom-on-done-design.md`、plan: `docs/plans/2026-05-18-star-bloom-on-done.md`
 
 ### デプロイ
 - [x] ~~**Supabase 本番プロジェクト作成 + 初期 migration**~~ **2026-05-17 完了** ─ `uytlmbhkxtgdvazhvjxy.supabase.co`、東京リージョン、migration 2 ファイル適用済み
