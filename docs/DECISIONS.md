@@ -790,3 +790,66 @@ solo dev の現実では「team handoff」の比喩自体が contrived。
 ### 影響
 これによって何にロックインされるか?何が防がれるか?
 ```
+
+---
+
+## ADR-021: Phase 1 の LLM provider に Gemini 2.0 Flash を採用、`lib/ai/` 抽象化層で差し替え可能に
+
+**日付**: 2026-05-18
+**ステータス**: 承認済み
+
+### 背景
+
+SPEC.md は現状、AI 用途のデフォルトモデルとして Claude Sonnet 4.6 / fallback に Claude Haiku 4.5 を指定している。Haiku 換算でも 1 user / 月 ~$0.005、1000 user / 月 ~$5 とコスト絶対値は小さいが、オーナーから「Phase 1(= v1.0 AI follow-up + 月次レポート、ADR-012 / ADR-016 関連)はそこまで高い精度を要らない。無料で日本語対応の LLM はどうか」と提起された。
+
+Phase 1 の現実的な前提:
+
+- Phase 0 セルフテスト + 早期 v1.0 β は **1 user 環境**(オーナー本人のみ)。コスト絶対値より、Anthropic API キー必須 + 使用量ダッシュボード監視という **運用負担** の方が大きい
+- Phase 1 で AI を呼ぶのは 2 用途:**AI follow-up question**(Q1+Q2 → why 質問 1 回、~500 tokens)+ **月次レポート**(curation primitives、~2000 tokens)
+- 両方とも ADR-016 引用係原則(要約しない / ラベリングしない / 解釈しない、引用と配置のみ)に準拠必須
+- 求める精度:fluent JP + ADR-019 worldview 常体トーン + instruction following(構造化制約)。高度な creative writing は不要
+
+本日 2026-05-18 のセッションで検討、`issues/2026-05-18-llm-provider-choice.md`(#002)に discussion 蓄積、issue + ADR 両方を起こすことに決定。
+
+### 検討した選択肢
+
+- **A: Claude Sonnet 4.6 / Haiku 4.5 を維持**(現 SPEC):精度最高、Anthropic SDK 整備済み、コストは規模時のみ問題
+- **B: Gemini 2.0 Flash (Google) を採用**:無料枠 15 RPM / 1500 RPD / 1M TPM、JP 強い、instruction following 良好
+- **C: Llama 3.3 70B (OpenRouter 経由 free)**:free tier 不安定、JP は二級
+- **D: Qwen 2.5 / 3**:中華系、JP 学習はあるが Gemini ほど自然ではない
+- **E: DeepSeek V3**:無料 API は寛大だが、JP 精度未実測
+
+### 決定
+
+**B: Gemini 2.0 Flash を Phase 1 の LLM provider として採用する。** SDK は `@google/genai` (TypeScript)。呼び出しは `lib/ai/` 抽象化層を一枚かませて行い、provider 差し替え時のコード変更を 1 ファイルに局所化する。v1.1+ のユーザースケール時に Claude Haiku 4.5 / Sonnet 4.6 への switch を再検討する。
+
+新規ファイル構成:
+
+- `lib/ai/index.ts` ─ provider 切替可能な `generate` 関数を export
+- `lib/ai/providers/gemini.ts` ─ Phase 1 初期実装
+- `lib/ai/providers/anthropic.ts` ─ 将来追加用の stub
+
+### 根拠
+
+- **無料枠が owner only 規模を桁違いに上回る**:15 RPM = 1 日 1500 回。owner = 1 日 1〜2 回 follow-up + 月 1 回 report で free tier の 0.1% も使わない。1500 user 規模まで無料持続見込み
+- **JP 精度が十分**:Google の検索データ由来で JP コーパスが豊富、worldview の常体トーン「だね / だよ」追従可
+- **ADR-016 引用係原則への compliance**:instruction following が割と素直で、Llama 系より明確に良い。prompt engineering + few-shot example でカバー可能と判断
+- **switch cost が低い**:`lib/ai/` 抽象化により provider 差し替えは 1 ファイル変更で済む。prompt は LLM 共通仕様で再利用可能
+- **タイミングが噛み合う**:v1.0 β 終了 → v1.1 で real user 流入が見えてから上位モデル検討で十分間に合う(無料枠で 1500 user まで持つので焦る必要なし)
+
+### 影響
+
+- **SPEC.md の AI セクション**:Phase 1 = Gemini 2.0 Flash と明記、v1.1+ で revisit する旨を注記(spec-keeper に dispatch 候補)
+- **`.env.example`**:`ANTHROPIC_API_KEY` の隣に `GEMINI_API_KEY` を追加。ADR-012 着手時に切替
+- **新規ファイル**:`lib/ai/index.ts` / `lib/ai/providers/gemini.ts` / `lib/ai/providers/anthropic.ts`(stub)
+- **依存追加**:`@google/genai` を `package.json` に追加(ADR-012 実装着手時)
+- **ADR-016 遵守の実測が必須**:ADR-012 着手の first task として、同 prompt を Claude Sonnet と Gemini Flash 両方に投げ、引用係原則違反率を比較
+- **vendor lock-in の mitigation**:`lib/ai/` 抽象化により、Gemini free tier 縮小 or 精度劣化発覚時に低コストで provider switch 可能
+- **`docs/AI-PROMPTS.md` 着手時の制約変更**:プロンプト template は LLM 中立で書く(`{{provider_specific}}` 等の hack は禁止)
+- **issue 連動**:`issues/2026-05-18-llm-provider-choice.md`(#002)を本 ADR 紐づけで close
+
+### 未解決の論点
+
+- **Claude へ switch する閾値**(user 数?コスト絶対値?精度劣化観測?)─ v1.1 着手時に決める
+- **月次レポート用に higher-quality model(Gemini 1.5 Pro 等)を使い分けるか**(follow-up は Flash、report は Pro で切替)─ ADR-016 月次スキーマ再設計時に決める
+- **ADR-016 引用係原則の違反検出 / 自動テスト**(LLM 出力が summary / 診断っぽくなったときに reject する仕組み)─ 別 ADR 候補
