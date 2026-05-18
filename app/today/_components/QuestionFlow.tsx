@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { BASIC_TEMPLATE } from "@/lib/constants/template";
 import { submitEntry } from "@/lib/server-actions/entries";
+import { todayJST } from "@/lib/utils/date";
 import { MoodInput } from "./MoodInput";
 import { FreeTextInput } from "./FreeTextInput";
 import { ProgressDots } from "./ProgressDots";
@@ -61,9 +62,13 @@ export function QuestionFlow({ initialEntry, date, displayDate }: Props) {
         tomorrowMessage: tomorrowMessage.trim(),
       });
       if (result.success) {
-        router.push(
-          `/today/done?streak=${result.streak.streak_days}&phase=${result.bodyPhase}&total=${result.totalEntries}`,
-        );
+        // issue #001: 今日 submit は /today/done で bloom ceremony、
+        // 過去 submit は /calendar/[date] で quiet 確認に分岐(spec §3.3)
+        const target =
+          date === todayJST()
+            ? `/today/done?streak=${result.streak.streak_days}&phase=${result.bodyPhase}&total=${result.totalEntries}`
+            : `/calendar/${date}`;
+        router.push(target);
       }
     });
   }
