@@ -916,3 +916,79 @@ Quota exceeded for metric: generate_content_free_tier_requests, limit: 0
 - **100+ user 到達時の A/B 評価方法**(同 prompt で両 model に投げて引用係原則遵守度を比較?サンプル数?)
 - **Claude Haiku 4.5 が Anthropic で deprecated になった時の next model**(Sonnet にスケールアップ? Haiku 5 待ち?)
 
+---
+
+## ADR-023: Q3 を「自由記述 closure」から「chip + text escape ハイブリッド」へ再変更(ADR-014 の input_type 部分のみ partial supersede)
+
+- **Date**: 2026-05-19
+- **Status**: Accepted
+- **Supersedes**: ADR-014(partial ─ Q3 input_type 部分のみ上書き。「ユーザー自身の言葉が活きる」hope は本 ADR の text escape path で部分継承するため、完全 revert ではない)
+- **Resolves**: ─
+- **Related spec**: `docs/specs/2026-05-19-q3-hybrid-chip-design.md`(本 ADR と parallel に spec-keeper が作成中)
+
+### 背景
+
+ADR-014(2026-05-14)で Q3 を v0 当時の 5 択 chip(「がんばれ / ゆっくりしよう / 今日はOK / 昨日のままで / なにか変えたい」)から自由記述(「明日の自分にひとことだけ」)に変更した。理由は二つあった:(1)「ユーザー自身の言葉のほうが closure として活きる」という hope、(2)「AI 深掘りの後にチップに戻ると jarring(認知的な落差)」という予測。
+
+その後 2026-05-18 に ADR-012 通り AI follow-up question を実装、Q2 と Q3 の間に AI 質問 step が成立した。3 問構造は **Q1(身体感覚 tap)→ Q2(今日の出来事 free text)→ AI follow-up(なぜそう感じた)→ Q3(明日への closure)** という flow に整った。
+
+ところが 2026-05-19 の Phase 0 Day 2、owner 自身の自己使用観察で次のことが明らかになった:
+
+- **Q3 free text が「明日もがんばろう」化**:ADR-014 が hope した「深い closure」になっておらず、実質 chip と同じ役割に collapse(毎日同じような短文を free text で書いている)
+- **「chip だと jarring」予測も実質非問題化**:user 自身が chip 相当のものを毎日 free text で書いているため、jarring の前提(「深い言葉に続く chip の落差」)が成立していない
+- **AI step が「深い探索」を担うようになった構造変化**:Q3 の役割は「軽い ritual closure」として再定義可能になった
+- **Q3 free text の認知負荷(「何を書こう」)が closure 軽快さに逆らう**:寝る前の 5 分の儀式の最後で「考えさせる」のは worldview(夜、ふとんから星を見上げる)とも整合しない
+
+これらを踏まえ、Q3 input_type の再変更を決定する。
+
+### 検討した選択肢
+
+- **A: ADR-014 のまま free text 維持** ─ 現状維持。ただし owner 観察で「重い、毎日同じ」摩擦が確認されており、放置は worldview 違反を続けることになる
+- **B: 削除(Q3 なし、AI follow-up で submit 完了)** ─ ritual rhythm(3 問構造の終わりの確かさ)を喪失。structural にも risky(就寝前の「終わり感」が立たない)
+- **C: pure chip 復活(ADR-014 完全 revert)** ─ escape valve がなく、「今日は特別なことがあった」日への対応が失われる。ADR-014 の hope を完全に捨てることになる
+- **D: chip + text escape ハイブリッド**(本決定) ─ default は 1 tap の軽快 closure、必要な日は text escape で柔軟性継承
+
+### 決定
+
+**D: hybrid chip + text escape を採用。**
+
+具体仕様:
+
+- input_type 新規追加:`chip_with_text`
+- default = 4 chip(`明日もがんばる` / `ゆっくり眠る` / `今日はここまで` / `そのままで`)
+- 「自由に書く」link で textarea expand(escape valve)、復帰 link あり
+- storage:chip 選択 = `value_choice` 保存、escape text 入力 = `value_text` 保存、**排他**(両方同時保存はしない)
+- DB schema は既存維持(`value_choice` + `value_text` 両 column 既存・両 nullable)、migration 不要
+
+ADR-014 で行った「`value_choice` → `value_text` への移行」は **partial revert**:`free_text` 必須は revert(chip path 復活)、しかし ADR-014 の「ユーザー自身の言葉」hope は escape text path として温存する。完全な revert ではない。
+
+### 根拠
+
+- **実 user 行動への adaptation**:ADR-014 の hope は owner 観察で外れた事実が確認できた。closure を「user 言葉の深さ」要求から「軽い ritual signal」に再定義する(YAGNI 適用 ─ hope した深さが実現してないなら、それを強制する構造を保つ理由はない)
+- **AI step の役割分担明確化**:AI follow-up が「深い探索」を担う構造で、Q3 は「軽い closure」が役割分担として natural。Q2(出来事)→ AI(なぜ)→ Q3(明日へ)の階層が、free text 三連よりも認知 rhythm として自然
+- **柔軟性を捨てない**:chip default + text escape で「特別な日」への対応継承、ADR-014 の hope を部分救済する。chip しか選べないと特別な日への対応を失う、free text 必須だと毎日の認知負荷を強制する、その両方を回避する
+- **DB 互換**:`value_choice` + `value_text` を排他で使う、両 column 既存・両 nullable、migration 不要。実装コストが低い
+- **chip text の worldview 適合**:「明日もがんばる」「ゆっくり眠る」「今日はここまで」「そのままで」の 4 chip は全て ADR-019 worldview の YES list(穏やか、受容、上向き)と整合し、ADR-008(罰しない / プレッシャーかけない)も尊重している
+- **Pre-PMF / Phase 0 の段階特性**:owner 自身が user である pre-PMF 段階では、観察 → 即 ADR → 反映の cycle を回す価値がある。ADR-014 を 5 日で再考することは規律違反ではなく、append-only な記録の上で transparent に supersede する正道
+
+### 影響
+
+- **ADR-014 partial supersede**:Q3 input_type 部分のみ上書き、「user 言葉が活きる」hope は escape text path で部分継承(完全 revert ではない、と明示)。ADR-014 本文は append-only 規律により touch しない
+- **`lib/constants/template.ts`** BASIC_TEMPLATE Q3 改修:input_type → `chip_with_text`、options array に 4 chip 追加
+- **`lib/types.ts`** InputType union 拡張:`"chip_with_text"` を追加
+- **新規 component**:`app/today/_components/ChipWithTextEscape.tsx`(chip 配列 + 「自由に書く」link + textarea expand state)
+- **`QuestionFlow.tsx`** Q3 step rendering 分岐、state(`tomorrowChip` + `tomorrowMessage` の排他管理)
+- **`submitEntry`** input + answers insert 分岐(chip path / text path)
+- **`/calendar/[date]` EntryDetail** Q3 display 分岐(chip-like visual / text visual)
+- **DB schema**:変更なし、`value_choice` + `value_text` 両既存・両 nullable で受ける
+- **既存 entries 互換**:ADR-014 期(2026-05-14 〜 2026-05-19)の free text entries は display で text path、migration 不要
+- **`docs/SPEC.md`** Q3 section update(別 spec-keeper dispatch、ADR-023 / spec doc 確定後に)
+- **Pencil design system**(`/design/hoshifumi.pen`):chip component の追加が望ましい(別タスク、本 ADR scope 外)
+
+### 未解決の論点
+
+- **chip text の長期的進化**:Phase 0 終了時の owner 観察で「もっとこの chip 欲しい / この chip 使わなかった」が出たら追加 / 入替の運用をどうするか(その都度 ADR? 軽量な改定 log?)
+- **chip text の user customization**:v1.1+ で検討(現状 hard-coded、custom template 機能と一緒に動かす)
+- **既存 ADR-014 期 entries の display 一貫性**:text のみ entries が chip 化 entries と混在する月の体感、長期観察対象(/calendar の月次 view で違和感が出るか)
+- **mode 切替時の animation 詳細**:chip → textarea expand 時、textarea → chip 復帰時の transition(spec §9 で open、実装時に確定)
+
