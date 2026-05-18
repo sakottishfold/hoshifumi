@@ -11,6 +11,10 @@ interface SubmitEntryInput {
   bodySensation: number; // 1-5, Q1 body sensation tap (was `mood` pre-ADR-013)
   freeText: string;
   tomorrowMessage: string; // Q3 free text closure (was short_choice pre-ADR-014)
+  /** ADR-012 AI follow-up question(成功時のみ渡す、skip 時は undefined)*/
+  aiQuestion?: string;
+  /** ADR-012 AI follow-up に対する user の回答(aiQuestion と必ずセット)*/
+  aiAnswer?: string;
 }
 
 export async function submitEntry(input: SubmitEntryInput) {
@@ -49,12 +53,28 @@ export async function submitEntry(input: SubmitEntryInput) {
   // 既存の回答を削除して新規挿入(シンプル化)
   await supabase.from("answers").delete().eq("entry_id", entry.id);
 
-  const answers = [
+  const answers: Array<{
+    entry_id: string;
+    question_position: number;
+    value_number?: number;
+    value_text?: string;
+    question_text?: string;
+  }> = [
     { entry_id: entry.id, question_position: 1, value_number: input.bodySensation },
     { entry_id: entry.id, question_position: 2, value_text: input.freeText },
     // ADR-014: Q3 now stored in value_text (was value_choice when Q3 was short_choice in v0).
     { entry_id: entry.id, question_position: 3, value_text: input.tomorrowMessage },
   ];
+
+  // ADR-012: AI follow-up question + answer を pos 4 に保存(silent skip 時は insert しない)
+  if (input.aiQuestion && input.aiAnswer) {
+    answers.push({
+      entry_id: entry.id,
+      question_position: 4,
+      question_text: input.aiQuestion,
+      value_text: input.aiAnswer,
+    });
+  }
 
   const { error: answersError } = await supabase.from("answers").insert(answers);
   if (answersError) throw answersError;
