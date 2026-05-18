@@ -853,3 +853,66 @@ Phase 1 の現実的な前提:
 - **Claude へ switch する閾値**(user 数?コスト絶対値?精度劣化観測?)─ v1.1 着手時に決める
 - **月次レポート用に higher-quality model(Gemini 1.5 Pro 等)を使い分けるか**(follow-up は Flash、report は Pro で切替)─ ADR-016 月次スキーマ再設計時に決める
 - **ADR-016 引用係原則の違反検出 / 自動テスト**(LLM 出力が summary / 診断っぽくなったときに reject する仕組み)─ 別 ADR 候補
+
+---
+
+## ADR-022: Phase 1 LLM provider を Gemini 2.0 Flash から Anthropic Claude Haiku 4.5 に切替(ADR-021 の provider 選定部分のみ上書き)
+
+**日付**: 2026-05-19
+**ステータス**: 承認済み(ADR-021 の **Phase 1 provider 選定部分のみ partial supersede**。`lib/ai/` 抽象化方針 / provider 差し替え可能性 / v1.1+ 再評価方針は ADR-021 のまま継続)
+
+### 背景
+
+ADR-021(2026-05-18)で Phase 1 LLM provider を Gemini 2.0 Flash に決定、`lib/ai/` 抽象化層と `gemini.ts` / `anthropic.ts` (stub) を構築した。翌 2026-05-18 〜 19 の smoke test で Gemini API が即エラー:
+
+```
+Quota exceeded for metric: generate_content_free_tier_requests, limit: 0
+```
+
+`limit: 0`(= free tier 割当ゼロ)。billing 未設定でも本来は free tier に割り当てがあるはずだが、owner の GCP project は project type / region / 過去履歴の何らかの理由で 0 割当てになっていた。Phase 0 セルフテストが止まる状況で、対処オプションを 3 つ検討した。
+
+`issues/2026-05-19-gemini-free-tier-zero.md` に discussion 蓄積、ADR-021 を partial supersede する形で本 ADR を起こす。
+
+### 検討した選択肢
+
+- **A: Gemini billing を有効化(paid tier 切替)** ─ カード登録 5 分、月 $0.005(~0.75 円)、ADR-021 をそのまま継続できる。確実に動く
+- **B: 新 AI Studio project を作って free tier 再取得を試す** ─ 無料維持の可能性はあるが、成功保証なし。fragile な解決策で時間コスト高
+- **C: Anthropic Claude Haiku 4.5 に切替**(本決定) ─ `ANTHROPIC_API_KEY` は initial setup から既に残っている、billing 設定不要、`lib/ai/providers/anthropic.ts` stub を実体化するだけで即動作。月 ~$0.05(~7.5 円)
+
+### 決定
+
+**C: Anthropic Claude Haiku 4.5 を Phase 1(owner test + 早期 β、~100 user 規模まで)の LLM provider として採用する。** ADR-021 で構築した `lib/ai/` 抽象化はそのまま活用、env `AI_PROVIDER=anthropic` で切替えるだけでコードレベルの仕様変更は発生しない(default 値は ADR-021 通り `gemini` のまま維持)。Gemini billing 解決 or β 後 100+ user 規模到達時に Gemini への switch back を再評価する。
+
+具体作業:
+
+- `lib/ai/providers/anthropic.ts` を stub → 実装(`@anthropic-ai/sdk` 0.95.2、既 install)。role mapping(`"model"` → `"assistant"`)、AbortController、APIError handling を含む
+- `.env.example` に `AI_PROVIDER=anthropic` への切替コメント追加
+- `.env.local` に `AI_PROVIDER=anthropic` 追加(`ANTHROPIC_API_KEY` は既存)
+- Vercel 本番 env に `ANTHROPIC_API_KEY` + `AI_PROVIDER=anthropic` 設定(deploy 前必須)
+- model: `claude-haiku-4-5`(alias、dated form は `claude-haiku-4-5-20251001`)
+
+### 根拠
+
+- **即動作で Phase 0 / Phase 1 検証が止まらない**:`ANTHROPIC_API_KEY` が initial setup から残っており、billing 設定や project 作り直しが不要。Gemini billing 解決や新 project 取得を待たずに 5 分で復旧できる
+- **コストは owner 規模で許容**:月 ~$0.05(7.5 円)、Gemini 月 ~$0.005 との差は ~6 円/月で誤差。100 user で $5(750 円)、1000 user で $50(7500 円)─ 1000 user 規模で初めて Gemini 切替が経済合理性を持つ
+- **JP 精度 + ADR-016 引用係原則の instruction following**:Claude は instruction following が SOTA 水準で、引用係原則(要約・診断・アドバイス禁止)の遵守度が Gemini Flash より高いと判断。Anthropic の system prompt 解釈精度の評判通り
+- **ADR-021 の抽象化がここで真価を発揮**:`lib/ai/` 抽象化のおかげでコード差は `anthropic.ts` 1 file の stub → 実装のみ。ADR-021 の方針自体は完全に正しく、今回はその上で provider 選定だけを差し替える形になる
+- **CLAUDE.md の fallback model 記載と整合**:Claude Haiku 4.5 は元々 CLAUDE.md で fallback model として明示されていた。運用ノウハウの累積もある
+
+### 影響
+
+- **ADR-021 の partial supersede 関係**:Phase 1 LLM provider 選定の部分のみ本 ADR で上書き。**`lib/ai/` 抽象化方針 / provider 差し替え可能性 / v1.1+ 再評価方針 / vendor lock-in mitigation 思想は ADR-021 のまま継続**。ADR-021 本文は append-only 規律により touch しない
+- **`lib/ai/providers/anthropic.ts`**:stub → 実装(role mapping、AbortController、APIError handling)
+- **`.env.example`**:`AI_PROVIDER=anthropic` への切替コメント追記
+- **`.env.local`**:owner が `AI_PROVIDER=anthropic` を追加(`ANTHROPIC_API_KEY` 既存)
+- **Vercel 本番 env**:`ANTHROPIC_API_KEY` + `AI_PROVIDER=anthropic` を deploy 前に設定必須
+- **SPEC.md AI セクション**:Gemini 言及を Anthropic 主体 + Gemini はバックアップ option に書き換え(spec-keeper に別途 dispatch)
+- **コスト試算 update**:owner $0.05/月、100 user $5/月、1000 user $50/月。1000 user 規模で Gemini 切替が経済合理性を持つ
+- **ADR-021 default 値との不一致**:`lib/ai/` の default は `gemini` のまま、env で override して運用。コードを触らずに切戻し可能(ADR-021 の抽象化が機能する形)
+
+### 未解決の論点
+
+- **Gemini billing 解決時の switch back タイミング**(β 直前?Phase 0 完了後?即時?)
+- **100+ user 到達時の A/B 評価方法**(同 prompt で両 model に投げて引用係原則遵守度を比較?サンプル数?)
+- **Claude Haiku 4.5 が Anthropic で deprecated になった時の next model**(Sonnet にスケールアップ? Haiku 5 待ち?)
+
