@@ -41,7 +41,7 @@ function placeSmallLight(seed: number, index: number, total: number) {
   return { x, y };
 }
 
-const BURST_DELAYS_MS = 100; // small light を 100ms 間隔で stagger
+const BURST_STAGGER_MS = 100; // small light を 100ms 間隔で stagger
 const BURST_START_DELAY_MS = 1700; // bloom 1500ms + 200ms 待機
 
 export function BloomMoon({
@@ -56,15 +56,17 @@ export function BloomMoon({
           const { x, y } = placeSmallLight(burst.seed, i, burst.count);
           const size =
             burst.tier === "large" ? 10 : burst.tier === "medium" ? 8 : 6;
-          const delay = BURST_START_DELAY_MS + i * BURST_DELAYS_MS;
+          const delay = BURST_START_DELAY_MS + i * BURST_STAGGER_MS;
           return (
             <span
-              key={i}
+              key={`burst-${burst.seed}-${i}`}
               className="absolute rounded-full bg-primary-500 fade-in-soft-animate pointer-events-none"
               style={{
+                top: "50%",
+                left: "50%",
                 width: `${size}px`,
                 height: `${size}px`,
-                transform: `translate(${x}px, ${y}px)`,
+                transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
                 animationDelay: `${delay}ms`,
                 boxShadow: `0 0 ${size * 1.5}px rgba(245, 212, 154, 0.6)`,
               }}
