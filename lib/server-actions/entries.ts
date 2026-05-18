@@ -56,6 +56,15 @@ export async function submitEntry(input: SubmitEntryInput) {
   // 連続記録を更新
   const streak = await updateStreakForUser(user.id);
 
+  // 通算完了 entry 数を取得(milestone burst 判定用)
+  const { count: totalEntries, error: countError } = await supabase
+    .from("entries")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .not("completed_at", "is", null);
+
+  if (countError) throw countError;
+
   revalidatePath("/today");
   revalidatePath("/calendar");
 
@@ -63,6 +72,8 @@ export async function submitEntry(input: SubmitEntryInput) {
     success: true,
     entryId: entry.id,
     streak,
+    bodyPhase: input.bodySensation,
+    totalEntries: totalEntries ?? 0,
   };
 }
 
