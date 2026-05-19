@@ -3,7 +3,8 @@ export type InputType =
   | "scale_5"
   | "rating_4"
   | "short_choice"
-  | "free_text";
+  | "free_text"
+  | "chip_with_text"; // ADR-023: Q3 hybrid chip + text escape
 
 // Generic 5-tap option (originally for mood, now also used for body sensation per ADR-013).
 // Kept under the MoodOption name for backward compat with widget naming (MoodInput).

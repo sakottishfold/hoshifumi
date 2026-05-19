@@ -32,10 +32,19 @@ export const BASIC_TEMPLATE: Template = {
     },
     {
       position: 3,
-      // ADR-014: input_type changed from short_choice to free_text. Closure-focused single line.
       text: "明日の自分にひとことだけ",
-      input_type: "free_text",
-      placeholder: "短く、ひと言で",
+      // ADR-023: input_type を free_text から chip_with_text に再変更。
+      // ADR-014 が free_text にした(短文 chip → 自由記述 closure)が、
+      // Phase 0 Day 2 owner 観察で「明日もがんばろう」化が判明、軽い ritual closure として
+      // chip default + 自由記述 escape の hybrid に。
+      input_type: "chip_with_text",
+      placeholder: "思ったままに",
+      options: [
+        "明日もがんばる",
+        "ゆっくり眠る",
+        "今日はここまで",
+        "そのままで",
+      ],
     },
   ],
 };
