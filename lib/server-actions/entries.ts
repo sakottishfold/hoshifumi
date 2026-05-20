@@ -10,7 +10,11 @@ interface SubmitEntryInput {
   date?: string;
   bodySensation: number; // 1-5, Q1 body sensation tap (was `mood` pre-ADR-013)
   freeText: string;
-  tomorrowMessage: string; // Q3 free text closure (was short_choice pre-ADR-014)
+  // ADR-023: Q3 は chip(value_choice 行き)or text(value_text 行き)排他。
+  /** Q3 chip 選択(chip mode 時)*/
+  tomorrowChip?: string;
+  /** Q3 自由記述(text escape mode 時)*/
+  tomorrowMessage?: string;
   /** ADR-012 AI follow-up question(成功時のみ渡す、skip 時は undefined)*/
   aiQuestion?: string;
   /** ADR-012 AI follow-up に対する user の回答(aiQuestion と必ずセット)*/
@@ -58,13 +62,28 @@ export async function submitEntry(input: SubmitEntryInput) {
     question_position: number;
     value_number?: number;
     value_text?: string;
+    value_choice?: string;
     question_text?: string;
   }> = [
     { entry_id: entry.id, question_position: 1, value_number: input.bodySensation },
     { entry_id: entry.id, question_position: 2, value_text: input.freeText },
-    // ADR-014: Q3 now stored in value_text (was value_choice when Q3 was short_choice in v0).
-    { entry_id: entry.id, question_position: 3, value_text: input.tomorrowMessage },
   ];
+
+  // ADR-023: Q3 は chip(value_choice)or text(value_text)排他。
+  // chip 優先(両方渡された場合 chip)、両方 undefined なら Q3 行を insert しない。
+  if (input.tomorrowChip) {
+    answers.push({
+      entry_id: entry.id,
+      question_position: 3,
+      value_choice: input.tomorrowChip,
+    });
+  } else if (input.tomorrowMessage) {
+    answers.push({
+      entry_id: entry.id,
+      question_position: 3,
+      value_text: input.tomorrowMessage,
+    });
+  }
 
   // ADR-012: AI follow-up question + answer を pos 4 に保存(silent skip 時は insert しない)
   if (input.aiQuestion && input.aiAnswer) {

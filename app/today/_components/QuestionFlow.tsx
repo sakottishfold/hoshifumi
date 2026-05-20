@@ -11,6 +11,7 @@ import { FreeTextInput } from "./FreeTextInput";
 import { ProgressDots } from "./ProgressDots";
 import { MoonPhase } from "@/components/MoonPhase";
 import { AIQuestionStep } from "./AIQuestionStep";
+import { ChipWithTextEscape } from "./ChipWithTextEscape";
 import type { MoodOption, EntryWithAnswers } from "@/lib/types";
 
 interface Props {
@@ -31,10 +32,17 @@ export function QuestionFlow({ initialEntry, date, displayDate }: Props) {
     initialEntry?.answers?.find((a) => a.question_position === 2)
       ?.value_text ?? "",
   );
-  // ADR-014: Q3 now stored in value_text; fall back to value_choice for entries written under v0.
+  // ADR-023: Q3 は hybrid chip + text escape。chip 選択 = value_choice、text = value_text、排他。
   const initialQ3 = initialEntry?.answers?.find((a) => a.question_position === 3);
+  const [tomorrowChip, setTomorrowChip] = useState<string | null>(
+    initialQ3?.value_choice ?? null,
+  );
   const [tomorrowMessage, setTomorrowMessage] = useState<string>(
-    initialQ3?.value_text ?? initialQ3?.value_choice ?? "",
+    initialQ3?.value_text ?? "",
+  );
+  // 既存 entry が text only(ADR-014 期 free text)なら text mode、chip あれば chip、無ければ chip default
+  const [q3Mode, setQ3Mode] = useState<"chip" | "text">(
+    initialQ3?.value_choice ? "chip" : initialQ3?.value_text ? "text" : "chip",
   );
 
   // ADR-012 AI follow-up:Q2 完了後に AI step に入る、完了 or skip で Q3 へ
@@ -84,14 +92,25 @@ export function QuestionFlow({ initialEntry, date, displayDate }: Props) {
   }
 
   function handleSubmit() {
-    if (bodySensation === null || !freeText.trim() || !tomorrowMessage.trim()) return;
+    // ADR-023: Q3 は chip 選択 or text 入力のどちらかが満たされていれば OK
+    const q3Provided =
+      q3Mode === "chip"
+        ? tomorrowChip !== null
+        : tomorrowMessage.trim().length > 0;
+    if (bodySensation === null || !freeText.trim() || !q3Provided) return;
 
     startTransition(async () => {
       const result = await submitEntry({
         date,
         bodySensation,
         freeText: freeText.trim(),
-        tomorrowMessage: tomorrowMessage.trim(),
+        // ADR-023: Q3 は chip(value_choice 行き) or text(value_text 行き)排他
+        tomorrowChip:
+          q3Mode === "chip" ? (tomorrowChip ?? undefined) : undefined,
+        tomorrowMessage:
+          q3Mode === "text" && tomorrowMessage.trim()
+            ? tomorrowMessage.trim()
+            : undefined,
         aiQuestion: aiQuestion ?? undefined,
         aiAnswer: aiAnswer.trim() ? aiAnswer.trim() : undefined,
       });
@@ -111,7 +130,11 @@ export function QuestionFlow({ initialEntry, date, displayDate }: Props) {
   const canAdvance = (() => {
     if (step === 0) return bodySensation !== null;
     if (step === 1) return freeText.trim().length > 0;
-    if (step === 2) return tomorrowMessage.trim().length > 0;
+    if (step === 2) {
+      return q3Mode === "chip"
+        ? tomorrowChip !== null
+        : tomorrowMessage.trim().length > 0;
+    }
     return false;
   })();
 
@@ -135,7 +158,9 @@ export function QuestionFlow({ initialEntry, date, displayDate }: Props) {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-neutral-500 w-16">明日へ</span>
-              <span className="text-neutral-800">{tomorrowMessage}</span>
+              <span className="text-neutral-800">
+                {q3Mode === "chip" ? (tomorrowChip ?? "") : tomorrowMessage}
+              </span>
             </div>
           </div>
         </div>
@@ -227,11 +252,25 @@ export function QuestionFlow({ initialEntry, date, displayDate }: Props) {
               placeholder={q.placeholder}
             />
           )}
-          {q.input_type === "free_text" && step === 2 && (
-            <FreeTextInput
-              value={tomorrowMessage}
-              onChange={setTomorrowMessage}
-              placeholder={q.placeholder}
+          {q.input_type === "chip_with_text" && step === 2 && (
+            <ChipWithTextEscape
+              chips={(q.options as string[]) ?? []}
+              selectedChip={tomorrowChip}
+              textValue={tomorrowMessage}
+              mode={q3Mode}
+              onChipSelect={(chip) => {
+                setTomorrowChip(chip);
+                setTomorrowMessage(""); // chip 選んだら text reset、排他維持
+              }}
+              onTextChange={setTomorrowMessage}
+              onModeToggle={(newMode) => {
+                setQ3Mode(newMode);
+                if (newMode === "chip") {
+                  setTomorrowMessage(""); // chip 戻る時 text reset
+                } else {
+                  setTomorrowChip(null); // text 行く時 chip reset
+                }
+              }}
             />
           )}
         </div>
