@@ -158,8 +158,10 @@ function EntryDetail({
     (m) => m.value === bodyAnswer?.value_number,
   );
 
-  // ADR-014: Q3 now stored in value_text; older v0 entries may have value_choice.
-  const closureText = closureAnswer?.value_text ?? closureAnswer?.value_choice ?? null;
+  // ADR-023: Q3 は chip(value_choice) or text(value_text) 排他。
+  // ADR-014 期 entries は value_text のみ、v0 期は value_choice、それぞれ自然に分岐。
+  const q3Chip = closureAnswer?.value_choice ?? null;
+  const q3Text = closureAnswer?.value_text ?? null;
 
   return (
     <div className="space-y-4">
@@ -203,9 +205,13 @@ function EntryDetail({
       )}
 
       <Section label="明日の自分にひとことだけ">
-        {closureText ? (
+        {q3Chip ? (
+          <span className="inline-block rounded-full bg-primary-50 border border-primary-100 px-3 py-1 text-sm text-primary-700">
+            {q3Chip}
+          </span>
+        ) : q3Text ? (
           <p className="text-base text-neutral-800 leading-relaxed whitespace-pre-wrap">
-            {closureText}
+            {q3Text}
           </p>
         ) : (
           <p className="text-neutral-400">記録なし</p>
