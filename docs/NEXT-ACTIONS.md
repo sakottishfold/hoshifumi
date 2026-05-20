@@ -48,6 +48,7 @@ Phase 0 終了して、β に向けた本格実装。
 ### コア機能(必須)
 - [x] ~~**AI follow-up question** 実装~~ **2026-05-18 完了** ─ 当初 Gemini 2.0 Flash (ADR-021) 予定だったが free tier `limit:0` issue で **Anthropic Claude Haiku 4.5 に切替**(ADR-022 で ADR-021 partial supersede)。quote-back style (ADR-016)、blocking await + silent skip fallback。`lib/ai/` 抽象化基盤も同 spec で整備、provider 切替は env のみ。spec: `docs/specs/2026-05-18-ai-followup-question-design.md`、plan: `docs/plans/2026-05-18-ai-followup-question.md`
   - [ ] **Gemini 切替再検討**(β 後 100+ user 規模 or Gemini billing 解決時) ─ A/B 評価で品質劣化なければ移行、ADR-022 未解決の論点
+- [x] ~~**Q3 hybrid chip + text escape 実装**~~ **2026-05-19 着手 / 2026-05-21 完了** ─ Phase 0 Day 2 owner 観察(Q3 free text が「明日もがんばろう」化)で ADR-014 を partial supersede(ADR-023)。default 4 chip(明日もがんばる / ゆっくり眠る / 今日はここまで / そのままで)+「自由に書く」escape。spec: `docs/specs/2026-05-19-q3-hybrid-chip-design.md`、plan: `docs/plans/2026-05-19-q3-hybrid-chip.md`
 - [x] ~~**DB スキーマ migration**~~ **2026-05-17 完了** ─ `supabase/migrations/20260517000000_callback_state.sql`:
   - ~~`answers.question_position` CHECK を 1..3 → 1..5~~ ← 1..5 に緩和
   - ~~`answers.question_text` 列追加~~ ← 追加(Phase 0 未使用、ADR-012 forward-compat)
