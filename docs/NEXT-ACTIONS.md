@@ -61,7 +61,7 @@ Phase 0 終了して、β に向けた本格実装。
   - [ ] window-probabilistic unlock への切り戻し検討(Phase 0 FRICTION-LOG 入力次第、現状は Phase 0 用に deterministic 化)
   - [ ] 似てる体感の日 callback(身体感覚軸)─ `ADR-017` future
   - 出典: `ADR-017` / `SPEC.md` §8
-- [ ] **追加テンプレート**(仕事 / 親 / クリエイター系) ─ `ROADMAP.md` v1.0
+- [x] ~~**追加テンプレート**(仕事 / 親 / クリエイター系)~~ **2026-05-23 完了** ─ basic + 仕事 / 子育て / つくる / 感謝 の 5 種、Q2 文言のみテンプレ別、sticky last-used 選択。spec: `docs/specs/2026-05-21-additional-templates-design.md`、plan: `docs/plans/2026-05-21-additional-templates.md`
 - [ ] **テンプレ選択 onboarding** ─ `ROADMAP.md` v1.0
 - [ ] **月次 AI レポート** 生成 ─ `SPEC.md` §9
   - **⚠️ 出力スキーマを ADR-016 準拠で再設計してから実装**(現プロンプトの `summary_text` は引用係原則違反)
