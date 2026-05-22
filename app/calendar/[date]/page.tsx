@@ -77,6 +77,7 @@ export default async function EntryDetailPage({ params, searchParams }: Props) {
             initialEntry={entry}
             date={date}
             displayDate={formatDisplay(date)}
+            initialTemplateName={entry?.template_name ?? "basic"}
           />
         </div>
       </main>

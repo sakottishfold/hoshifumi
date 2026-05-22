@@ -1,5 +1,5 @@
 import { todayJST, formatDisplay } from "@/lib/utils/date";
-import { getEntryByDate } from "@/lib/server-actions/entries";
+import { getEntryByDate, getLastUsedTemplate } from "@/lib/server-actions/entries";
 import { QuestionFlow } from "./_components/QuestionFlow";
 import { AppHeader } from "@/components/AppHeader";
 
@@ -7,6 +7,11 @@ export default async function TodayPage() {
   const today = todayJST();
   const entry = await getEntryByDate(today);
   const isCompleted = !!entry?.completed_at;
+
+  // 追加テンプレート: 編集なら entry 自身の template、新規なら直近 entry の template(sticky last-used)
+  const initialTemplateName = entry
+    ? (entry.template_name ?? "basic")
+    : await getLastUsedTemplate();
 
   return (
     <main className="min-h-dvh">
@@ -24,6 +29,7 @@ export default async function TodayPage() {
           initialEntry={entry}
           date={today}
           displayDate={formatDisplay(today)}
+          initialTemplateName={initialTemplateName}
         />
       </div>
     </main>

@@ -3,7 +3,8 @@
 import { useState, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { BASIC_TEMPLATE, BODY_SENSATION_OPTIONS } from "@/lib/constants/template";
+import { getTemplate, BODY_SENSATION_OPTIONS } from "@/lib/constants/template";
+import { TemplateSwitcher } from "./TemplateSwitcher";
 import { submitEntry } from "@/lib/server-actions/entries";
 import { todayJST } from "@/lib/utils/date";
 import { MoodInput } from "./MoodInput";
@@ -12,18 +13,27 @@ import { ProgressDots } from "./ProgressDots";
 import { MoonPhase } from "@/components/MoonPhase";
 import { AIQuestionStep } from "./AIQuestionStep";
 import { ChipWithTextEscape } from "./ChipWithTextEscape";
-import type { MoodOption, EntryWithAnswers } from "@/lib/types";
+import type { MoodOption, EntryWithAnswers, TemplateName } from "@/lib/types";
 
 interface Props {
   initialEntry: EntryWithAnswers | null;
   date: string;
   displayDate: string;
+  initialTemplateName: string;
 }
 
-export function QuestionFlow({ initialEntry, date, displayDate }: Props) {
+export function QuestionFlow({
+  initialEntry,
+  date,
+  displayDate,
+  initialTemplateName,
+}: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [step, setStep] = useState(0);
+  const [templateName, setTemplateName] = useState<TemplateName>(
+    (initialTemplateName as TemplateName) ?? "basic",
+  );
   const [bodySensation, setBodySensation] = useState<number | null>(
     initialEntry?.answers?.find((a) => a.question_position === 1)
       ?.value_number ?? null,
@@ -61,7 +71,7 @@ export function QuestionFlow({ initialEntry, date, displayDate }: Props) {
       ?.value_text ?? "",
   );
 
-  const questions = BASIC_TEMPLATE.questions;
+  const questions = getTemplate(templateName).questions;
   const isComplete = step >= questions.length;
 
   function next() {
@@ -102,6 +112,7 @@ export function QuestionFlow({ initialEntry, date, displayDate }: Props) {
     startTransition(async () => {
       const result = await submitEntry({
         date,
+        templateName,
         bodySensation,
         freeText: freeText.trim(),
         // ADR-023: Q3 は chip(value_choice 行き) or text(value_text 行き)排他
@@ -227,6 +238,14 @@ export function QuestionFlow({ initialEntry, date, displayDate }: Props) {
       </div>
 
       <div className="space-y-6 pt-4">
+        {step === 0 && initialEntry === null && (
+          <div>
+            <TemplateSwitcher
+              current={templateName}
+              onSelect={setTemplateName}
+            />
+          </div>
+        )}
         <div className="space-y-2">
           {step === 2 && aiStatus === "skipped" && (
             <p className="text-xs text-neutral-500">今夜は静かに進みます</p>

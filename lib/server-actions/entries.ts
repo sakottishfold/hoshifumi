@@ -124,6 +124,26 @@ export async function submitEntry(input: SubmitEntryInput) {
   };
 }
 
+/** 直近の完了 entry の template_name を返す。entry が無ければ "basic"。*/
+export async function getLastUsedTemplate(): Promise<string> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data } = await supabase
+    .from("entries")
+    .select("template_name")
+    .eq("user_id", user.id)
+    .not("completed_at", "is", null)
+    .order("entry_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return data?.template_name ?? "basic";
+}
+
 export async function getEntryByDate(
   date: string,
 ): Promise<EntryWithAnswers | null> {
