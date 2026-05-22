@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { updateStreakForUser } from "@/lib/utils/streak";
 import { todayJST, monthRange } from "@/lib/utils/date";
 import { revalidatePath } from "next/cache";
-import type { EntryWithAnswers } from "@/lib/types";
+import type { EntryWithAnswers, FollowUpTurn } from "@/lib/types";
 
 interface SubmitEntryInput {
   date?: string;
@@ -17,10 +17,8 @@ interface SubmitEntryInput {
   tomorrowChip?: string;
   /** Q3 自由記述(text escape mode 時)*/
   tomorrowMessage?: string;
-  /** ADR-012 AI follow-up question(成功時のみ渡す、skip 時は undefined)*/
-  aiQuestion?: string;
-  /** ADR-012 AI follow-up に対する user の回答(aiQuestion と必ずセット)*/
-  aiAnswer?: string;
+  /** ADR-024 AI follow-up 対話(0件 = silent skip、最大3件)*/
+  aiTurns?: FollowUpTurn[];
 }
 
 export async function submitEntry(input: SubmitEntryInput) {
@@ -87,15 +85,15 @@ export async function submitEntry(input: SubmitEntryInput) {
     });
   }
 
-  // ADR-012: AI follow-up question + answer を pos 4 に保存(silent skip 時は insert しない)
-  if (input.aiQuestion && input.aiAnswer) {
+  // ADR-024: AI follow-up 対話を pos 4..6 に保存(silent skip 時は空配列 → insert なし)
+  (input.aiTurns ?? []).forEach((turn, i) => {
     answers.push({
       entry_id: entry.id,
-      question_position: 4,
-      question_text: input.aiQuestion,
-      value_text: input.aiAnswer,
+      question_position: 4 + i,
+      question_text: turn.question,
+      value_text: turn.answer,
     });
-  }
+  });
 
   const { error: answersError } = await supabase.from("answers").insert(answers);
   if (answersError) throw answersError;

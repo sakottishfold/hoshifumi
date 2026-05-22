@@ -13,7 +13,7 @@ import { ProgressDots } from "./ProgressDots";
 import { MoonPhase } from "@/components/MoonPhase";
 import { AIQuestionStep } from "./AIQuestionStep";
 import { ChipWithTextEscape } from "./ChipWithTextEscape";
-import type { MoodOption, EntryWithAnswers, TemplateName } from "@/lib/types";
+import type { MoodOption, EntryWithAnswers, TemplateName, FollowUpTurn } from "@/lib/types";
 
 interface Props {
   initialEntry: EntryWithAnswers | null;
@@ -55,21 +55,20 @@ export function QuestionFlow({
     initialQ3?.value_choice ? "chip" : initialQ3?.value_text ? "text" : "chip",
   );
 
-  // ADR-012 AI follow-up:Q2 完了後に AI step に入る、完了 or skip で Q3 へ
+  // ADR-012/024 AI follow-up:Q2 完了後に AI step に入る、完了 or skip で Q3 へ
   type AIStatus = "pending" | "active" | "done" | "skipped";
+  const initialAiTurns: FollowUpTurn[] =
+    initialEntry?.answers
+      ?.filter((a) => a.question_position >= 4)
+      .sort((a, b) => a.question_position - b.question_position)
+      .map((a) => ({
+        question: a.question_text ?? "",
+        answer: a.value_text ?? "",
+      })) ?? [];
   const initialAiStatus: AIStatus =
-    initialEntry?.answers?.some((a) => a.question_position === 4)
-      ? "done"
-      : "pending";
+    initialAiTurns.length > 0 ? "done" : "pending";
   const [aiStatus, setAiStatus] = useState<AIStatus>(initialAiStatus);
-  const [aiQuestion, setAiQuestion] = useState<string | null>(
-    initialEntry?.answers?.find((a) => a.question_position === 4)
-      ?.question_text ?? null,
-  );
-  const [aiAnswer, setAiAnswer] = useState<string>(
-    initialEntry?.answers?.find((a) => a.question_position === 4)
-      ?.value_text ?? "",
-  );
+  const [aiTurns, setAiTurns] = useState<FollowUpTurn[]>(initialAiTurns);
 
   const questions = getTemplate(templateName).questions;
   const isComplete = step >= questions.length;
@@ -86,12 +85,10 @@ export function QuestionFlow({
     }
   }
 
-  // ADR-012:AI step の完了 callback。inline arrow だと AIQuestionStep の useEffect が
-  // 毎 render で re-fetch するので useCallback で stable identity に。
-  const handleAIComplete = useCallback((question: string | null, answer: string | null) => {
-    setAiQuestion(question);
-    setAiAnswer(answer ?? "");
-    setAiStatus(question === null ? "skipped" : "done");
+  // ADR-024:AI step の完了 callback。turns 空 = silent skip。
+  const handleAIComplete = useCallback((turns: FollowUpTurn[]) => {
+    setAiTurns(turns);
+    setAiStatus(turns.length === 0 ? "skipped" : "done");
     setStep(2); // Q3 へ
   }, []);
 
@@ -122,8 +119,7 @@ export function QuestionFlow({
           q3Mode === "text" && tomorrowMessage.trim()
             ? tomorrowMessage.trim()
             : undefined,
-        aiQuestion: aiQuestion ?? undefined,
-        aiAnswer: aiAnswer.trim() ? aiAnswer.trim() : undefined,
+        aiTurns,
       });
       if (result.success) {
         // issue #001: 今日 submit は /today/done で bloom ceremony、
@@ -167,6 +163,23 @@ export function QuestionFlow({
                 {freeText}
               </span>
             </div>
+            {aiTurns.length > 0 && (
+              <div className="flex gap-3">
+                <span className="text-neutral-500 w-16">AIとの問い</span>
+                <div className="flex-1 space-y-2">
+                  {aiTurns.map((turn, i) => (
+                    <div key={i} className="space-y-0.5">
+                      <p className="text-neutral-500 leading-relaxed">
+                        {turn.question}
+                      </p>
+                      <p className="text-neutral-800 leading-relaxed">
+                        {turn.answer}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-3">
               <span className="text-neutral-500 w-16">明日へ</span>
               <span className="text-neutral-800">

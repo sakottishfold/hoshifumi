@@ -1,47 +1,78 @@
 "use client";
 
-// ADR-012 AI follow-up question UI。
+// ADR-012/024 AI follow-up question UI(multi-turn)。
 // QuestionFlow から Q2 完了後に render される。
-// AI を await して質問取得 → user 回答入力 → onComplete で QuestionFlow に通知。
-// 失敗時は onComplete(null, null) で silent skip 通知。
+// AI と最大3問の対話 → done で onComplete(turns) を呼ぶ。
+// 初問失敗時は onComplete([]) で silent skip 通知。
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { generateFollowUpQuestion } from "@/lib/server-actions/ai-followup";
+import type { FollowUpTurn } from "@/lib/types";
 
 interface Props {
   bodySensationLabel: string;
   freeText: string;
-  /** AI 完了 or skip 通知。aiQuestion=null = silent skip */
-  onComplete: (aiQuestion: string | null, aiAnswer: string | null) => void;
+  /** AI 対話完了通知。空配列 = silent skip。 */
+  onComplete: (turns: FollowUpTurn[]) => void;
 }
 
 type State =
   | { kind: "loading" }
   | { kind: "answering"; question: string }
-  | { kind: "skipped" };
+  | { kind: "done" };
 
-export function AIQuestionStep({ bodySensationLabel, freeText, onComplete }: Props) {
+export function AIQuestionStep({
+  bodySensationLabel,
+  freeText,
+  onComplete,
+}: Props) {
   const [state, setState] = useState<State>({ kind: "loading" });
   const [answer, setAnswer] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  // 確定済みターン(re-render をまたいで保持)
+  const turnsRef = useRef<FollowUpTurn[]>([]);
+  // 初問取得の二重発火(StrictMode)対策
+  const startedRef = useRef(false);
+
+  // dialog 履歴を渡して次の outcome を取得し state を進める。
+  const advance = useCallback(
+    async (dialog: FollowUpTurn[]) => {
+      setState({ kind: "loading" });
+      const outcome = await generateFollowUpQuestion({
+        bodySensationLabel,
+        freeText,
+        dialog,
+      });
+      if ("question" in outcome) {
+        setSubmitting(false);
+        setState({ kind: "answering", question: outcome.question });
+      } else {
+        // done または error(初問のみ)。done なら対話あり、error なら dialog は空。
+        setState({ kind: "done" });
+        onComplete(dialog);
+      }
+    },
+    [bodySensationLabel, freeText, onComplete],
+  );
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const result = await generateFollowUpQuestion({ bodySensationLabel, freeText });
-      if (cancelled) return;
-      if ("error" in result) {
-        setState({ kind: "skipped" });
-        // 即時 silent skip 通知(skip 時は AI 質問なしで Q3 へ)
-        onComplete(null, null);
-      } else {
-        setState({ kind: "answering", question: result.question });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [bodySensationLabel, freeText, onComplete]);
+    if (startedRef.current) return;
+    startedRef.current = true;
+    void advance([]);
+  }, [advance]);
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!answer.trim() || submitting || state.kind !== "answering") return;
+    setSubmitting(true);
+    const nextTurns: FollowUpTurn[] = [
+      ...turnsRef.current,
+      { question: state.question, answer: answer.trim() },
+    ];
+    turnsRef.current = nextTurns;
+    setAnswer("");
+    void advance(nextTurns);
+  }
 
   if (state.kind === "loading") {
     return (
@@ -54,20 +85,9 @@ export function AIQuestionStep({ bodySensationLabel, freeText, onComplete }: Pro
     );
   }
 
-  // state.kind === "skipped" の場合は onComplete で QuestionFlow が次 step に進む、
-  // 本 component は unmount される。fallback render として何も出さない。
-  if (state.kind === "skipped") {
+  // done:onComplete 済み、QuestionFlow が次 step へ進め本 component は unmount。
+  if (state.kind === "done") {
     return null;
-  }
-
-  // state.kind === "answering"
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!answer.trim() || submitting) return;
-    setSubmitting(true);
-    if (state.kind === "answering") {
-      onComplete(state.question, answer.trim());
-    }
   }
 
   return (
