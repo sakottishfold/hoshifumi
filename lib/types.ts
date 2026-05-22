@@ -50,13 +50,19 @@ export interface Entry {
 export interface Answer {
   id: string;
   entry_id: string;
-  /** 1=body sensation, 2=event free text, 3=tomorrow message, 4=ADR-012 AI follow-up answer */
-  question_position: 1 | 2 | 3 | 4;
+  /** 1=body sensation, 2=event free text, 3=tomorrow message, 4-6=ADR-024 AI follow-up 対話ターン */
+  question_position: 1 | 2 | 3 | 4 | 5 | 6;
   value_number: number | null;
   value_text: string | null;
   value_choice: string | null;
-  /** ADR-012: AI 生成質問本文(question_position=4 のときのみ非 null) */
+  /** ADR-012/024: AI 生成質問本文(question_position>=4 のときのみ非 null) */
   question_text: string | null;
+}
+
+/** ADR-024: AI follow-up 対話の1往復(問い + ユーザー回答)。 */
+export interface FollowUpTurn {
+  question: string;
+  answer: string;
 }
 
 export interface EntryWithAnswers extends Entry {

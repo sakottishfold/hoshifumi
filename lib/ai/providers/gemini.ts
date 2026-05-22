@@ -3,7 +3,7 @@
 // timeout は AbortController で、retry は server-action 層(ai-followup.ts)で管理。
 // このファイルは 1 回の呼び出しに集中(retry なし)。
 
-import { ApiError, GoogleGenAI } from "@google/genai";
+import { ApiError, GoogleGenAI, type Schema } from "@google/genai";
 import { ChatError, type ChatRequest, type ChatResponse } from "@/lib/ai/types";
 
 const MODEL = "gemini-2.0-flash";
@@ -46,6 +46,12 @@ export async function chat(req: ChatRequest): Promise<ChatResponse> {
         temperature: req.temperature ?? 0.4,
         maxOutputTokens: req.maxOutputTokens ?? 100,
         abortSignal: controller.signal,
+        ...(req.responseSchema
+          ? {
+              responseMimeType: "application/json",
+              responseSchema: req.responseSchema as Schema,
+            }
+          : {}),
       },
     });
 

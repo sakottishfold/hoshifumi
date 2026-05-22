@@ -25,6 +25,8 @@ export interface ChatRequest {
   timeoutMs?: number;
   /** retry 回数、default 1 */
   maxRetries?: number;
+  /** 指定時、provider に JSON 構造化出力を要求する(Gemini responseSchema)。provider 非依存のため unknown。 */
+  responseSchema?: unknown;
 }
 
 /** chat 呼び出し success response */
