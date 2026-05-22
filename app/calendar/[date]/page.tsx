@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { getEntryByDate } from "@/lib/server-actions/entries";
 import { formatDisplay, todayJST } from "@/lib/utils/date";
-import { BODY_SENSATION_OPTIONS } from "@/lib/constants/template";
+import { BODY_SENSATION_OPTIONS, getTemplate } from "@/lib/constants/template";
 import { AppHeader } from "@/components/AppHeader";
 import { MoonPhase } from "@/components/MoonPhase";
 import { QuestionFlow } from "@/app/today/_components/QuestionFlow";
@@ -159,6 +159,13 @@ function EntryDetail({
     (m) => m.value === bodyAnswer?.value_number,
   );
 
+  // Q2 の Section label は entry の template 由来(spec: 追加テンプレート §3)。
+  // Q1/Q3/AI label は全テンプレ共通なので hardcode のまま。
+  const template = getTemplate(entry.template_name ?? "basic");
+  const q2Label =
+    template.questions.find((q) => q.position === 2)?.text ??
+    "今日いちばん印象に残ったこと";
+
   // ADR-023: Q3 は chip(value_choice) or text(value_text) 排他。
   // ADR-014 期 entries は value_text のみ、v0 期は value_choice、それぞれ自然に分岐。
   const q3Chip = closureAnswer?.value_choice ?? null;
@@ -177,7 +184,7 @@ function EntryDetail({
         )}
       </Section>
 
-      <Section label="今日いちばん印象に残ったこと">
+      <Section label={q2Label}>
         {textAnswer?.value_text ? (
           <p className="text-base text-neutral-800 leading-relaxed whitespace-pre-wrap">
             {textAnswer.value_text}
