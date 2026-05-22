@@ -75,7 +75,7 @@ entries (
   id              uuid PK
   user_id         uuid → auth.users.id
   entry_date      date NOT NULL          -- JST calendar date
-  template_name   text NOT NULL DEFAULT 'basic'
+  template_name   text NOT NULL DEFAULT 'basic'  -- 'basic'|'work'|'parenting'|'making'|'gratitude' (§3)
   completed_at    timestamptz
   created_at      timestamptz
   updated_at      timestamptz
@@ -166,13 +166,30 @@ CREATE TRIGGER on_auth_user_created
 
 ## 3. テンプレート仕様
 
-### v1.0/current:Basic テンプレート(ADR-013/014/012/021 適用後)
+> 出典:`docs/specs/2026-05-21-additional-templates-design.md`(2026-05-23 実装)。
+> 関連 ADR:ADR-011(5分儀式フロー)/ ADR-013(Q1 身体感覚)/ ADR-014・023(Q3 closure)/ ADR-012・021(AI follow-up)。
+
+### 5 テンプレート体制(v1.0)
+
+v1.0 では計 5 種のテンプレートを持つ:`basic` / `work` / `parenting` / `making` / `gratitude`。
+
+| name(内部 ID)| 表示名 | description | Q2 text | Q2 placeholder |
+|---|---|---|---|---|
+| `basic` | ほしふみ | 体・できごと・明日へ | 今日いちばん印象に残ったこと | ひとことでも、ふたことでも |
+| `work` | 仕事 | 仕事の一日を置く | 今日の仕事で、心に残ったこと | うまくいったことも、そうでないことも |
+| `parenting` | 子育て | 子どもとの一日を置く | 今日の子どもとのこと | 小さなことでも |
+| `making` | つくる | つくる一日を置く | 今日つくったもの、つくれなかったもの | かたちにならなくても |
+| `gratitude` | 感謝 | ありがたみを置く | 今日、ありがたかったこと | 誰かのことでも、何かのことでも |
+
+**テンプレ間で変わるのは Q2 の文言(text + placeholder)のみ**。Q1 身体感覚タップ・Q3 closure chip は全テンプレ共通で、3-beat ritual(体感 → 今日 → 明日)は固定(ADR-011/013/023)。AI follow-up は prompt 改修なしで Q1+Q2 を読むため、Q2 文言が変われば文脈は自動で追従する。
+
+内部 `name` は英語 kebab、表示名は日本語のやわらかい和語(「親」でなく「子育て」、「クリエイター」でなく「つくる」)─ ADR-019 worldview のトーンに合わせ、production verb / カタカナ職業名を避ける。
+
+### 全テンプレ共通の質問構造(ADR-013/014/012/021/023 適用後)
 
 ```typescript
+// 全テンプレ共通。Q2 の text/placeholder のみテンプレ別に差し替わる。
 {
-  name: "basic",
-  emoji: "🌒",
-  description: "体・できごと・明日へ",
   questions: [
     {
       position: 1,
@@ -188,35 +205,59 @@ CREATE TRIGGER on_auth_user_created
     },
     {
       position: 2,
-      text: "今日いちばん印象に残ったこと",
+      text: <テンプレ別>,         // 上表 Q2 text
       input_type: "free_text",
-      placeholder: "ひとことでも、ふたことでも"
+      placeholder: <テンプレ別>   // 上表 Q2 placeholder
     },
     {
       position: 3,
       text: "明日の自分にひとことだけ",
-      input_type: "free_text",  // v0 では short_choice、ADR-014 で変更
-      placeholder: "短く、ひと言で"
+      input_type: "chip_with_text",  // v0 は short_choice、ADR-014 で free_text、ADR-023 で chip+text hybrid
+      placeholder: "思ったままに",
+      options: ["明日もがんばる", "ゆっくり眠る", "今日はここまで", "そのままで"]
     }
   ]
 }
 ```
 
-注:`emoji` フィールドは月相 unicode を fallback としてデータに残しているが、UI 描画は `<MoonPhase phase={value}>` コンポーネントで brand-consistent な SVG を表示する。
+注:`emoji` フィールド(月相 unicode)はデータラベルとして残すが、UI 描画は `<MoonPhase phase={value}>` コンポーネントで brand-consistent な SVG を表示する。
+
+### 実装方式(TS 定数、DB-backed は v1.1+)
+
+テンプレートは `lib/constants/template.ts` の TypeScript 定数として定義する(CLAUDE.md 方針)。
+
+- `TEMPLATES`:`Record<TemplateName, Template>`。`TemplateName` は `"basic" | "work" | "parenting" | "making" | "gratitude"` の discriminated union(`lib/types.ts`)
+- `getTemplate(name: string): Template`:`template_name` から `Template` を解決。不明 name は `basic` にフォールバック
+- `TEMPLATE_LIST`:switcher の表示順(`basic` → `work` → `parenting` → `making` → `gratitude`)
+- `buildQuestions(q2Text, q2Placeholder)`:共通 Q1/Q3 を組み立てる helper、Q2 だけ引数で差し込む(DRY)
+- `Template` 型は `displayName`(UI 表示名、内部 `name` と分離)を持つ
+
+**`templates` テーブルは作らない**。DB-backed templates はユーザーが scaffolding 質問を自作する custom template(v1.1+)を実装するときに初めて導入する。それまではスキーマ変更を伴わず TS 定数のみで完結させる(§2「テーブル(v1.1+)」`custom_templates` 参照)。
+
+### テンプレートの選択方式(sticky last-used)
+
+`/today` 入場時のテンプレートは **sticky last-used** で決まる:
+
+- 直近の完了 entry(`completed_at NOT NULL`、`entry_date` DESC 最初)の `template_name` を default に採用
+- 完了 entry が一つもない(初回ユーザー)→ `basic`
+- step 0(Q1 画面)でのみ `TemplateSwitcher` で inline 切替可。step 1(Q2)以降は switcher 非表示 ─ Q2 進入後はテンプレ依存の文言で回答済みのため、切替は orphan を生む
+- **編集モード(`/calendar/[date]?edit=1`)はその entry 固有の `template_name` 固定**、切替不可・switcher 非表示
+
+毎日テンプレを選ぶ friction はなく、変えたい日だけ step 0 で切り替える。`profiles` に default テンプレ列は持たない(sticky last-used で不要)。
+
+### `entries.template_name` カラム
+
+使用テンプレートは entry ごとに `entries.template_name`(text NOT NULL DEFAULT `'basic'`)に保存する。このカラムは v0 から存在し、5 テンプレ化に伴う **migration は不要**。`submitEntry` が upsert 時に選択テンプレ名を書き込む。v0〜現在の既存 entry は全て `'basic'` で、`getTemplate('basic')` により従来どおり解決される。
 
 ### AI follow-up step(ADR-012 / ADR-021、Phase 1 実装済み)
 
-Q2 と Q3 の間に AI follow-up step が挟まる。固定テンプレ質問は pos 1/2/3 のまま、AI follow-up は **pos 4** として `answers.question_text` に質問・`value_text` に回答を保存する(質問順 ≠ position 番号、UI 上の見え順は Q1 → Q2 → AI → Q3)。`question_position` の CHECK は 1-4 に緩和済み。silent skip 時は pos 4 を insert せず answers は 3 行のまま。
-
-### v1.0 目標:追加テンプレート
-
-Basic 以外のテンプレートを v1.0 で追加。同じ構造(固定 Q1 タップ + 固定 Q2 自由記述 + AI follow-up + 固定 Q3 closure)で、文言と scaffolding の角度(仕事、子育て、クリエイター等)が異なる。具体的なテンプレートセットは Phase 1 セルフテスト後に決定。
+Q2 と Q3 の間に AI follow-up step が挟まる。固定テンプレ質問は pos 1/2/3 のまま、AI follow-up は **pos 4** として `answers.question_text` に質問・`value_text` に回答を保存する(質問順 ≠ position 番号、UI 上の見え順は Q1 → Q2 → AI → Q3)。`question_position` の CHECK は 1-4 に緩和済み。silent skip 時は pos 4 を insert せず answers は 3 行のまま。AI follow-up はテンプレ非依存(universal)── prompt はテンプレごとに分岐せず、Q1+Q2 の値だけを読む。
 
 ### 普遍ルール
-- Position 1(固定):5タップの定量 ─ 身体感覚 or ドメイン固有スケール、分析に使う
-- Position 2(固定):定性自由記述 ─ AI に渡す「今日何があったか」の raw 入力
+- Position 1(固定・共通):5タップの定量 ─ 身体感覚スケール、分析に使う
+- Position 2(固定・テンプレ別):定性自由記述 ─ AI に渡す「今日何があったか」の raw 入力。**テンプレ間の唯一の差分**
 - AI follow-up(動的、pos 4 で保存):Position 1+2 を引用して問い返す質問1つ(ADR-016 引用係原則)
-- Position 3(固定):短い自由記述 closure ─ 寝る前の手放し
+- Position 3(固定・共通):chip + text escape hybrid の closure ─ 寝る前の手放し(ADR-023)
 
 ## 4. 入力タイプ仕様
 
