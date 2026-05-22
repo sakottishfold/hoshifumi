@@ -8,6 +8,8 @@ import type { EntryWithAnswers } from "@/lib/types";
 
 interface SubmitEntryInput {
   date?: string;
+  /** 追加テンプレート: 使用したテンプレ。未指定は "basic" */
+  templateName?: string;
   bodySensation: number; // 1-5, Q1 body sensation tap (was `mood` pre-ADR-013)
   freeText: string;
   // ADR-023: Q3 は chip(value_choice 行き)or text(value_text 行き)排他。
@@ -43,7 +45,7 @@ export async function submitEntry(input: SubmitEntryInput) {
       {
         user_id: user.id,
         entry_date: entryDate,
-        template_name: "basic",
+        template_name: input.templateName ?? "basic",
         completed_at: new Date().toISOString(),
       },
       { onConflict: "user_id,entry_date" },
