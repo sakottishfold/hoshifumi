@@ -43,9 +43,9 @@ function buildQuestions(q2Text: string, q2Placeholder: string): Question[] {
 export const TEMPLATES: Record<TemplateName, Template> = {
   basic: {
     name: "basic",
-    displayName: "ほしふみ",
+    displayName: "きほん",
     emoji: "🌒",
-    description: "体・できごと・明日へ",
+    description: "ジャンルを決めずに、ふつうに置く",
     questions: buildQuestions(
       "今日いちばん印象に残ったこと",
       "ひとことでも、ふたことでも",

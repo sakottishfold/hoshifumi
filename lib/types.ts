@@ -80,4 +80,6 @@ export interface Profile {
   streak_days: number;
   longest_streak: number;
   last_entry_at: string | null;
+  /** ADR-025: ユーザーが選んだ日記テンプレ。NULL = onboarding 未完了。 */
+  template_name: string | null;
 }
