@@ -153,7 +153,9 @@ function EntryDetail({
   const bodyAnswer = entry.answers?.find((a) => a.question_position === 1);
   const textAnswer = entry.answers?.find((a) => a.question_position === 2);
   const closureAnswer = entry.answers?.find((a) => a.question_position === 3);
-  const aiAnswer = entry.answers?.find((a) => a.question_position === 4);
+  const aiTurns = (entry.answers ?? [])
+    .filter((a) => a.question_position >= 4)
+    .sort((a, b) => a.question_position - b.question_position);
 
   const body = BODY_SENSATION_OPTIONS.find(
     (m) => m.value === bodyAnswer?.value_number,
@@ -194,21 +196,27 @@ function EntryDetail({
         )}
       </Section>
 
-      {/* ADR-012: AI follow-up question + 回答(pos 4)。Phase 0 entries には pos 4 がないので skip。 */}
-      {aiAnswer && (aiAnswer.question_text || aiAnswer.value_text) && (
+      {/* ADR-012/024: AI follow-up 対話(pos 4..6)。Phase 0 entries には無いので skip。 */}
+      {aiTurns.length > 0 && (
         <Section label="AI からの問い">
-          {aiAnswer.question_text && (
-            <p className="text-sm text-neutral-500 leading-relaxed mb-3 whitespace-pre-wrap">
-              {aiAnswer.question_text}
-            </p>
-          )}
-          {aiAnswer.value_text ? (
-            <p className="text-base text-neutral-800 leading-relaxed whitespace-pre-wrap">
-              {aiAnswer.value_text}
-            </p>
-          ) : (
-            <p className="text-neutral-400">記録なし</p>
-          )}
+          <div className="space-y-4">
+            {aiTurns.map((turn) => (
+              <div key={turn.question_position} className="space-y-1">
+                {turn.question_text && (
+                  <p className="text-sm text-neutral-500 leading-relaxed whitespace-pre-wrap">
+                    {turn.question_text}
+                  </p>
+                )}
+                {turn.value_text ? (
+                  <p className="text-base text-neutral-800 leading-relaxed whitespace-pre-wrap">
+                    {turn.value_text}
+                  </p>
+                ) : (
+                  <p className="text-neutral-400">記録なし</p>
+                )}
+              </div>
+            ))}
+          </div>
         </Section>
       )}
 
