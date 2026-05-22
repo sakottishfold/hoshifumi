@@ -1,6 +1,6 @@
 # AI Follow-up 深堀り(multi-turn)+ 質問品質改善 ─ Design
 
-> Status: **承認待ち**(オーナーレビュー後 writing-plans へ)
+> Status: **実装完了**(2026-05-23)
 > 日付: 2026-05-23
 > 関連 ADR: ADR-012(AI follow-up question)/ ADR-016(AI は引用係)/ ADR-019(worldview)/ ADR-021(Gemini)/ **ADR-024(新規・要起票)**
 > 関連 spec: `docs/specs/2026-05-18-ai-followup-question-design.md` ── 本 spec はその §1「v1.0 = single turn」を一部 supersede する

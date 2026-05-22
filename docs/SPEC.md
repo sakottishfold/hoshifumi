@@ -1,14 +1,15 @@
 # 技術仕様: ほしふみ
 
 > 実装仕様書
-> 最終更新: 2026-05-18
+> 最終更新: 2026-05-23
 > 改名履歴:みっつ → いとなみ(2026-05-14, ADR-015) → ほしふみ(2026-05-16, ADR-018)
 >
 > Phase 1(v1.0 着手中)実装状況:
 > - ADR-013/014(Q1 身体感覚、Q3 自由記述 closure)反映済み
 > - ADR-017 past-entry callback 実装済み(`profiles.last_callback_at` / `unlocked_stage` migration 投入、`selectCallbackEntry()` server action 稼働)
 > - ADR-012 AI follow-up question + ADR-021 Gemini 2.0 Flash 採用 ─ 本セクション §1/§3/§6/§9 に反映、`lib/ai/` 抽象化と `app/today/_components/AIQuestionStep.tsx` で稼働
-> - `answers.question_text` カラム + `question_position` CHECK BETWEEN 1 AND 4 への schema 緩和済み(pos 4 = AI follow-up)
+> - ADR-024 AI follow-up の multi-turn 化(最大3問の適応的深堀り)実装済み ─ 本セクション §3/§6 に反映、AI が毎ターン JSON 構造化出力で ask/close を判断
+> - `answers.question_text` カラム + `question_position` CHECK BETWEEN 1 AND 8 への schema 緩和済み(pos 4〜6 = AI follow-up の対話ターン)
 
 ## 1. システムアーキテクチャ
 
@@ -33,13 +34,13 @@
 ### リクエストフロー(日次入力 ─ ADR-012 / ADR-021 適用)
 1. ユーザーが `/today` を開く → SSR が今日の既存エントリを取得(あれば)
 2. 固定 Q1(身体感覚タップ)入力 → 固定 Q2(自由記述)入力 → Q2 submit
-3. **AI follow-up step(blocking await)**:`generateFollowUpQuestion()` server action が Gemini 2.0 Flash を呼ぶ。`lib/ai/prompts/follow-up.ts` の system prompt + few-shots が Q2 から1フレーズを「...」引用形で問い返す質問を1つ生成(ADR-016 引用係原則)。timeout 8 秒 + auto-retry 1 回。loading 中は「ひと呼吸…」と breath animation。
-4. AI 質問 card が表示され、ユーザーが回答(自由記述) → 固定 Q3(明日への自由記述 closure)へ
-5. Q3 submit で `submitEntry` が `entries` を upsert、`answers` を置き換え(成功時 4 行:pos 1 = Q1 体・pos 2 = Q2 出来事・pos 3 = Q3 closure・pos 4 = AI follow-up)、`updateStreakForUser` を呼ぶ
+3. **AI follow-up step(multi-turn、blocking await)**:`generateFollowUpQuestion()` server action が Gemini 2.0 Flash を呼ぶ。`lib/ai/prompts/follow-up.ts` の system prompt が Q1+Q2 とこれまでの対話履歴を読み、JSON 構造化出力(`{"action":"ask","question":"..."}` か `{"action":"close"}`)で「次の問いを出す / 対話を閉じる」を毎ターン判断する(ADR-016 引用係原則、ADR-024)。AI が問いを返す限りループし、**最大 3 問**でハードキャップ。各ターン timeout 8 秒 + auto-retry 1 回。loading 中は「ひと呼吸…」と breath animation。
+4. AI 質問 card が表示され、ユーザーが回答(自由記述)。AI が次の問いを返せば再び card 表示(深堀り)、`close` を返すか 3 問に達したら → 固定 Q3(明日への自由記述 closure)へ
+5. Q3 submit で `submitEntry` が `entries` を upsert、`answers` を置き換え(pos 1 = Q1 体・pos 2 = Q2 出来事・pos 3 = Q3 closure・pos 4〜6 = AI follow-up の対話ターン)、`updateStreakForUser` を呼ぶ
 6. Action が `/today` と `/calendar` パスを revalidate
 7. クライアントが `/today/done` に遷移(過去 entry callback の surfacing は §8 参照)
 
-> AI 失敗時(timeout / API error / rate limit):auto-retry 1 回後も失敗なら **silent skip**。Q3 prompt 上に「今夜は静かに進みます」を 1 行表示し、pos 4 行は insert せずに Q3 まで進む(answers は 3 行のまま保存)。
+> AI 失敗時(timeout / API error / rate limit):auto-retry 1 回後も失敗なら、**初問の失敗**は **silent skip**(Q3 prompt 上に「今夜は静かに進みます」を 1 行表示し、pos 4 行を insert せず Q3 まで進む)。**2問目以降の失敗・不正出力**は **graceful close** ── それまでに成立した対話ターンは保持したまま対話を閉じ、Q3 へ進む。
 
 ### リクエストフロー(月次 AI レポート - v1.1)
 1. Vercel Cron が毎月1日 09:00 JST に起動
@@ -82,12 +83,12 @@ entries (
   UNIQUE (user_id, entry_date)
 )
 
--- answers: Up to four rows per entry (position 1-4)
+-- answers: Up to six rows per entry (position 1-6; CHECK は 1-8 まで許容)
 answers (
   id                uuid PK
   entry_id          uuid → entries.id ON DELETE CASCADE
-  question_position integer CHECK BETWEEN 1 AND 4
-  question_text     text       -- AI follow-up 等、動的 question テキスト保存用(pos 4 のみ使用)
+  question_position integer CHECK BETWEEN 1 AND 8
+  question_text     text       -- AI follow-up 等、動的 question テキスト保存用(pos 4〜6 で使用)
   value_number      integer    -- for mood_5, scale_5, rating_4
   value_text        text       -- for free_text, voice_text, AI answer
   value_choice      text       -- for short_choice
@@ -96,16 +97,16 @@ answers (
 )
 ```
 
-`question_position` の意味割り当て(Basic テンプレ、ADR-012 / ADR-021 適用後):
+`question_position` の意味割り当て(Basic テンプレ、ADR-012 / ADR-021 / ADR-024 適用後):
 
 | pos | 内容 | 使用カラム | 備考 |
 |---|---|---|---|
 | 1 | Q1 身体感覚 | `value_number` (1-5) | 必ず insert |
 | 2 | Q2 今日の出来事 | `value_text` | 必ず insert |
 | 3 | Q3 明日へひとこと | `value_text` | 必ず insert |
-| 4 | AI follow-up | `question_text` = AI 生成質問、`value_text` = user 回答 | **silent skip 時は insert しない**(answers は 3 行のまま) |
+| 4〜6 | AI follow-up 対話ターン | `question_text` = AI 生成質問、`value_text` = user 回答 | multi-turn(最大3問)。成立したターン分のみ insert。**silent skip 時は1行も insert しない**(answers は 3 行のまま) |
 
-`question_text` は AI 質問のように「entry ごとに動的に決まる質問文」を保存するためのカラム。固定テンプレ質問(pos 1-3)では使わない(質問文は `lib/constants/template.ts` から render 時に引く)。pos 4 が将来増える可能性は低いが、CHECK は将来テンプレ拡張の余地として `BETWEEN 1 AND 4` のままで運用。
+`question_text` は AI 質問のように「entry ごとに動的に決まる質問文」を保存するためのカラム。固定テンプレ質問(pos 1-3)では使わない(質問文は `lib/constants/template.ts` から render 時に引く)。AI follow-up の multi-turn 化(ADR-024)で対話ターンは最大 3 つ(pos 4〜6)になり、CHECK は `BETWEEN 1 AND 8` まで緩和済み(将来テンプレ拡張の余地も兼ねる)。
 
 ### テーブル(v1.1+)
 
@@ -249,14 +250,14 @@ v1.0 では計 5 種のテンプレートを持つ:`basic` / `work` / `parenting
 
 使用テンプレートは entry ごとに `entries.template_name`(text NOT NULL DEFAULT `'basic'`)に保存する。このカラムは v0 から存在し、5 テンプレ化に伴う **migration は不要**。`submitEntry` が upsert 時に選択テンプレ名を書き込む。v0〜現在の既存 entry は全て `'basic'` で、`getTemplate('basic')` により従来どおり解決される。
 
-### AI follow-up step(ADR-012 / ADR-021、Phase 1 実装済み)
+### AI follow-up step(ADR-012 / ADR-021 / ADR-024、Phase 1 実装済み)
 
-Q2 と Q3 の間に AI follow-up step が挟まる。固定テンプレ質問は pos 1/2/3 のまま、AI follow-up は **pos 4** として `answers.question_text` に質問・`value_text` に回答を保存する(質問順 ≠ position 番号、UI 上の見え順は Q1 → Q2 → AI → Q3)。`question_position` の CHECK は 1-4 に緩和済み。silent skip 時は pos 4 を insert せず answers は 3 行のまま。AI follow-up はテンプレ非依存(universal)── prompt はテンプレごとに分岐せず、Q1+Q2 の値だけを読む。
+Q2 と Q3 の間に AI follow-up step が挟まる。ADR-024 により single-turn から **適応的 multi-turn(最大3問)** に変更済み。固定テンプレ質問は pos 1/2/3 のまま、AI follow-up の対話ターンは **pos 4〜6** として `answers.question_text` に質問・`value_text` に回答を保存する(質問順 ≠ position 番号、UI 上の見え順は Q1 → Q2 → AI 対話 → Q3)。`question_position` の CHECK は 1-8 に緩和済み。silent skip 時は AI 行を 1 つも insert せず answers は 3 行のまま。AI follow-up はテンプレ非依存(universal)── prompt はテンプレごとに分岐せず、Q1+Q2 と対話履歴だけを読む。
 
 ### 普遍ルール
 - Position 1(固定・共通):5タップの定量 ─ 身体感覚スケール、分析に使う
 - Position 2(固定・テンプレ別):定性自由記述 ─ AI に渡す「今日何があったか」の raw 入力。**テンプレ間の唯一の差分**
-- AI follow-up(動的、pos 4 で保存):Position 1+2 を引用して問い返す質問1つ(ADR-016 引用係原則)
+- AI follow-up(動的、pos 4〜6 で保存):Position 1+2 を引用して問い返す質問を multi-turn(最大3問)で深堀り(ADR-016 引用係原則、ADR-024)
 - Position 3(固定・共通):chip + text escape hybrid の closure ─ 寝る前の手放し(ADR-023)
 
 ## 4. 入力タイプ仕様
@@ -294,17 +295,17 @@ Q2 と Q3 の間に AI follow-up step が挟まる。固定テンプレ質問は
 
 ### `submitEntry(input: SubmitEntryInput)`
 
-入力(Phase 1 / ADR-012 適用後):
+入力(Phase 1 / ADR-012 / ADR-024 適用後):
 ```typescript
 {
   date?: string;            // YYYY-MM-DD, defaults to today JST
   bodySensation: number;    // 1-5 (Q1)
   freeText: string;         // Q2 自由記述
   tomorrowMessage: string;  // Q3 自由記述 closure
-  aiQuestion?: string;      // AI follow-up 質問テキスト(silent skip 時は undefined)
-  aiAnswer?: string;        // AI follow-up に対する user 回答(silent skip 時は undefined)
+  aiTurns?: FollowUpTurn[]; // AI follow-up 対話ターン(0〜3 件、silent skip 時は空配列 or undefined)
 }
-```
+
+// FollowUpTurn = { question: string; answer: string }(lib/types.ts)
 
 挙動:
 1. 認証検証
@@ -314,7 +315,7 @@ Q2 と Q3 の間に AI follow-up step が挟まる。固定テンプレ質問は
    - pos 1 → Q1 `value_number`
    - pos 2 → Q2 `value_text`
    - pos 3 → Q3 `value_text`
-   - pos 4 → `aiQuestion` / `aiAnswer` が両方非空のときのみ insert(`question_text` = AI 質問、`value_text` = user 回答)
+   - pos 4〜6 → `aiTurns` の各ターンを順に insert(`question_text` = AI 質問、`value_text` = user 回答)。空配列なら 1 行も insert しない
 5. `updateStreakForUser` で streak 再計算
 6. `/today` と `/calendar` パスを revalidate
 
@@ -322,38 +323,43 @@ Q2 と Q3 の間に AI follow-up step が挟まる。固定テンプレ質問は
 
 エラー:未認証または DB エラーで throw。
 
-### `generateFollowUpQuestion(input: FollowUpInput)`(Phase 1 / ADR-012 / ADR-021)
+### `generateFollowUpQuestion(input: FollowUpInput)`(Phase 1 / ADR-012 / ADR-021 / ADR-024)
 
-AI follow-up step 専用の server action(`lib/server-actions/ai-followup.ts`)。`lib/ai/chat()` 経由で Gemini 2.0 Flash を呼び、Q2 から1フレーズを引用形「...」で問い返す質問を1つ生成する。
+AI follow-up step 専用の server action(`lib/server-actions/ai-followup.ts`)。`lib/ai/chat()` 経由で Gemini 2.0 Flash を呼ぶ。ADR-024 により **multi-turn**:1 回の呼び出しで「次の問い 1 つ」または「対話終了」を返し、client が問い 1 つごとに繰り返し呼ぶ。AI は Q1+Q2 とこれまでの対話履歴を読み、毎ターン JSON 構造化出力で ask/close を判断する。
 
 ```typescript
 interface FollowUpInput {
   bodyPhase: 1 | 2 | 3 | 4 | 5;
   bodySensationLabel: string;  // 例: "重たい" "ふつう"、template から
   freeText: string;            // Q2 内容
+  dialog: FollowUpTurn[];      // これまでの対話履歴(0〜2 件)。空 = 初問
 }
 
-type FollowUpResult =
-  | { question: string }
+type FollowUpOutcome =
+  | { question: string }       // 次の問い
+  | { done: true }             // 対話終了(AI が close / 3 問到達 / graceful close)
   | { error: "timeout" | "api_error" | "rate_limit" | "empty_response" };
 ```
 
 挙動:
-1. 認証検証
-2. `lib/ai/prompts/follow-up.ts` から system prompt + few-shots + user message を build
+1. 認証検証(`freeText` 空・`dialog` が 3 件以上なら AI を呼ばずに早期 return)
+2. `lib/ai/prompts/follow-up.ts` から system prompt + user message(Q1+Q2+対話履歴)を build。`responseSchema`(`FOLLOW_UP_RESPONSE_SCHEMA`)で JSON 構造化出力を強制
 3. `AbortController` で **timeout 8 秒**、失敗時 **auto-retry 1 回**
-4. 成功:`{ question }` を返す
-5. 失敗(timeout / 4xx / 5xx / network):retry → なお失敗で `{ error }` 返す
-6. rate limit(429)/ empty response:retry せず即 `{ error }`(retry しても改善しない)
+4. 成功:AI 出力を parse して `{"action":"ask",...}` なら `{ question }`、`{"action":"close"}` なら `{ done: true }` を返す
+5. **ハードキャップ**:対話ターンが 3 問に達したら AI を呼ばず `{ done: true }`
+6. 失敗(timeout / 4xx / 5xx / network / parse 不能):
+   - **初問**(`dialog` 空)→ retry → なお失敗で `{ error }`(silent skip パスへ)
+   - **2問目以降** → `{ done: true }` に倒し、それまでの対話を保持して graceful close
+7. rate limit(429)/ empty response:retry せず即 return(初問は `{ error }`、以降は `{ done: true }`)
 
-client 側(`AIQuestionStep.tsx`)は `{ question }` を card 表示、`{ error }` を受けたら silent skip パスへ。
+client 側(`AIQuestionStep.tsx`)は multi-turn ループ:`{ question }` を card 表示 → ユーザー回答を `dialog` に積んで再呼び出し、`{ done }` で Q3 へ、初問の `{ error }` で silent skip パスへ。
 
 Provider 切替:`AI_PROVIDER` env(default = "gemini")で `lib/ai/index.ts` が分岐。v1.1+ で Anthropic に切り替える際は env + provider 実装の差し替えのみ。
 
 ### `getEntryByDate(date: string)`
 
 入力:`date`(`YYYY-MM-DD` 形式)
-返り値:`EntryWithAnswers | null`(pos 4 が含まれる entry は AI follow-up の質問 + 回答付き)
+返り値:`EntryWithAnswers | null`(pos 4〜6 が含まれる entry は AI follow-up の対話ターン(質問 + 回答)付き)
 
 ### `getEntriesForMonth(year: number, month: number)`
 
@@ -445,7 +451,7 @@ ALTER TABLE profiles
   ADD COLUMN unlocked_stage   integer DEFAULT 0;
 ```
 
-同 migration で `answers.question_text` カラム追加と `question_position` CHECK の 1-4 緩和も実施済み(ADR-012 用 forward-compat)。
+同 migration で `answers.question_text` カラム追加と `question_position` CHECK の 1-4 緩和も実施済み(ADR-012 用 forward-compat)。その後 ADR-024 の multi-turn 化に伴い、migration `20260523000000_ai_multiturn.sql` で CHECK を `BETWEEN 1 AND 8` に再緩和(AI 対話ターンを pos 4〜6 に保存)。
 
 Stage の入り口は `unlocked_stage` と現エントリ数から deterministic に計算可能だが、`unlocked_stage` を明示的に保存しておくことで、後から stage しきい値を調整したときの曖昧さを避ける。
 
@@ -595,7 +601,7 @@ Vercel Cron:`0 0 1 * *`(毎月1日、00:00 UTC = 09:00 JST)
 3. **Pro の無料トライアル**:7日?14日?なし?
 4. **年額ディスカウント**:12ヶ月で10ヶ月分(¥4,800)?
 5. **解約フロー**:ソフトな「本当に?」+ win-back オファー?
-6. **`/calendar/[date]` 詳細表示で pos 4(AI 質問 + 回答)をどう見せるか**:現状 `EntryDetail` は pos 1-3 のみ render、pos 4 は読み出しても表示されない。AI follow-up を「過去に向き合った dialog」として明示するか、Q2 の延長として inline で見せるかは Phase 1 セルフテストの friction 観察後に判断。別 issue で track(`docs/specs/2026-05-18-ai-followup-question-design.md` §11 Open Questions)
+6. ~~**`/calendar/[date]` 詳細表示で pos 4(AI 質問 + 回答)をどう見せるか**~~ → **解決済み(ADR-024)**:`EntryDetail` は pos 4〜6 の AI follow-up 対話ターンを全て render するようになった。multi-turn 化に伴い「過去に向き合った dialog」として複数往復を表示する。
 7. **過去日 entry submit で AI follow-up を踏ませるか**:`/calendar/[date]?edit=1` から過去日を編集するとき、現状の素直な実装では AI step が乗る。「過去の日に対して今の AI に問わせる」感覚が不自然かは launch 後 friction で決める
 8. **月次レポートの ADR-016 準拠再設計**:§9 のドラフトを「curation primitive 出力」に丸ごと書き換える設計タスク。v1.1 着手前必須
 
