@@ -992,3 +992,32 @@ ADR-014 で行った「`value_choice` → `value_text` への移行」は **part
 - **既存 ADR-014 期 entries の display 一貫性**:text のみ entries が chip 化 entries と混在する月の体感、長期観察対象(/calendar の月次 view で違和感が出るか)
 - **mode 切替時の animation 詳細**:chip → textarea expand 時、textarea → chip 復帰時の transition(spec §9 で open、実装時に確定)
 
+---
+
+## ADR-024: AI follow-up を v1.0 で multi-turn 化(ADR-012 の「single でスタート」部分のみ改定)
+
+- **Date**: 2026-05-23
+- **Status**: Accepted
+- **Supersedes**: ─(ADR-012 は supersede しない。ADR-012 の実装方針「single でスタート」と spec 2026-05-18 §1 の α 決定のみを改定)
+- **Resolves**: SPEC §15 Open Question #6(`/calendar/[date]` での AI 質問表示)
+- **Related spec**: `docs/specs/2026-05-23-ai-followup-multiturn-design.md`
+
+### 背景
+
+ADR-012 で AI follow-up を「single turn でスタート、multi-turn は将来検討」とし、spec 2026-05-18 §1 も「v1.0 = single turn / multi-turn は v2.0+」と α 決定していた。2026-05-23 のブレストで、1問1答では浅い回答を掘り下げられず引用係としての価値が出し切れない、という観察が共有された。`lib/ai/` の provider 抽象化と構造化出力の導入で適応的 multi-turn が現実的コストで実装可能になったため v1.0 へ前倒しする。
+
+### 決定
+
+適応的 multi-turn を v1.0 で採用。AI が毎ターン JSON 構造化出力(`{"action":"ask",...}` か `{"action":"close"}`)で続行/終了を自己判断、ハードキャップ最大3問。初問失敗は silent skip、2問目以降の失敗は graceful close(成立ターンを保持)。AI 対話は `answers` の pos 4〜6 に保存、CHECK を `BETWEEN 1 AND 8` に緩和。
+
+### 根拠
+
+- single-turn では深掘りできない。適応的 multi-turn なら掘る価値のある日だけ深掘りでき、引用係としての問い返しが機能する
+- 固定回数ではなく AI 判断 + キャップにすることで軽い日は1問で閉じ、worldview の穏やかさを保つ
+- ADR-016(引用係原則)と矛盾しない ── 各問いは引用ベースの問い返しで、要約・解釈はしない
+- 後方互換 ── single-turn 期の既存 entry は pos 4 が1行ある形でそのまま表示に乗る
+
+### 影響
+
+ADR-012 は supersede しない。改定するのは ADR-012 の実装方針「single でスタート」と spec 2026-05-18 §1 の α 決定のみ。SPEC §15 Open Question #6(`/calendar/[date]` での AI 質問表示)を解決。
+
