@@ -22,8 +22,17 @@ export interface Question {
   options?: MoodOption[] | string[];
 }
 
+export type TemplateName =
+  | "basic"
+  | "work"
+  | "parenting"
+  | "making"
+  | "gratitude";
+
 export interface Template {
-  name: string;
+  name: TemplateName;
+  /** UI 表示名(内部 name と分離)*/
+  displayName: string;
   emoji: string;
   description: string;
   questions: Question[];
