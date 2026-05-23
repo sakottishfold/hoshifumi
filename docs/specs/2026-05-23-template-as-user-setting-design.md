@@ -1,6 +1,6 @@
 # テンプレートをユーザー設定にする ─ Design
 
-> Status: **承認待ち**(オーナーレビュー後 writing-plans へ)
+> Status: **実装完了**(2026-05-23)
 > 日付: 2026-05-23
 > 関連 ADR: ADR-019(worldview)/ **ADR-025(新規・要起票)**
 > 関連 spec: `docs/specs/2026-05-21-additional-templates-design.md` ── 本 spec はその §7.1「inline switcher」を覆す

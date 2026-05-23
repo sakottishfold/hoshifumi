@@ -10,6 +10,7 @@
 > - ADR-012 AI follow-up question + ADR-021 Gemini 2.0 Flash 採用 ─ 本セクション §1/§3/§6/§9 に反映、`lib/ai/` 抽象化と `app/today/_components/AIQuestionStep.tsx` で稼働
 > - ADR-024 AI follow-up の multi-turn 化(最大3問の適応的深堀り)実装済み ─ 本セクション §3/§6 に反映、AI が毎ターン JSON 構造化出力で ask/close を判断
 > - `answers.question_text` カラム + `question_position` CHECK BETWEEN 1 AND 8 への schema 緩和済み(pos 4〜6 = AI follow-up の対話ターン)
+> - ADR-025 テンプレートをユーザー単位の設定に(`profiles.template_name`、`/onboarding` で初回選択、`/settings` で変更、`/today` の inline switcher 廃止)実装済み ─ 本セクション §3 に反映
 
 ## 1. システムアーキテクチャ
 
@@ -235,20 +236,23 @@ v1.0 では計 5 種のテンプレートを持つ:`basic` / `work` / `parenting
 
 **`templates` テーブルは作らない**。DB-backed templates はユーザーが scaffolding 質問を自作する custom template(v1.1+)を実装するときに初めて導入する。それまではスキーマ変更を伴わず TS 定数のみで完結させる(§2「テーブル(v1.1+)」`custom_templates` 参照)。
 
-### テンプレートの選択方式(sticky last-used)
+### テンプレートの選択方式(ユーザー設定、ADR-025)
 
-`/today` 入場時のテンプレートは **sticky last-used** で決まる:
+テンプレートは **ユーザー単位の設定** として `profiles.template_name`(nullable、NULL = onboarding 未完了)に保存する。
 
-- 直近の完了 entry(`completed_at NOT NULL`、`entry_date` DESC 最初)の `template_name` を default に採用
-- 完了 entry が一つもない(初回ユーザー)→ `basic`
-- step 0(Q1 画面)でのみ `TemplateSwitcher` で inline 切替可。step 1(Q2)以降は switcher 非表示 ─ Q2 進入後はテンプレ依存の文言で回答済みのため、切替は orphan を生む
-- **編集モード(`/calendar/[date]?edit=1`)はその entry 固有の `template_name` 固定**、切替不可・switcher 非表示
-
-毎日テンプレを選ぶ friction はなく、変えたい日だけ step 0 で切り替える。`profiles` に default テンプレ列は持たない(sticky last-used で不要)。
+- **初回登録時**:`profiles.template_name` が NULL のユーザーは `/today` 訪問時に `/onboarding` へ自動誘導され、5択から1つ選ぶ → `setTemplate` server action で `profiles.template_name` に保存 → `/today` 復帰
+- **以降の `/today` 入場**:`profiles.template_name` のテンプレを採用。inline switcher は出さない(ジャーナル画面は問いに集中)
+- **変更口**:`/settings` の「日記のテンプレート」カードでいつでも変更可(`TemplatePicker` を inline 展開)
+- **編集モード(`/calendar/[date]?edit=1`)**:その entry 固有の `template_name` を固定で使用(過去エントリは当時のテンプレのまま表示)
+- ジャーナル画面に switcher を出さない理由は `/today` step 0 の inline ピルが気づきにくく「押せる」と認識されなかったため(ADR-025)
 
 ### `entries.template_name` カラム
 
-使用テンプレートは entry ごとに `entries.template_name`(text NOT NULL DEFAULT `'basic'`)に保存する。このカラムは v0 から存在し、5 テンプレ化に伴う **migration は不要**。`submitEntry` が upsert 時に選択テンプレ名を書き込む。v0〜現在の既存 entry は全て `'basic'` で、`getTemplate('basic')` により従来どおり解決される。
+使用テンプレートは entry ごとに `entries.template_name`(text NOT NULL DEFAULT `'basic'`)に保存する。これは v0 から存在する。`submitEntry` は upsert 時に **`profiles.template_name` の現在値を `entries.template_name` に焼き込む**(過去エントリは後でユーザーがテンプレを変えても当時の Q2 文言で表示できる)。`getTemplate(name)` は不明 name を `basic` にフォールバックする。
+
+### `profiles.template_name` カラム(ADR-025)
+
+ユーザー単位のテンプレ設定。`text` 型、nullable、default なし。NULL は「onboarding 未完了」のシグナル(初回テンプレ選択前)。`profiles` の自動作成 trigger(`insert into public.profiles (id, email)`)は `template_name` を指定しないため、新規 profile は NULL で作成される。既存 profile は migration `20260523010000_profile_template.sql` で「直近エントリの `template_name`、無ければ `basic`」に backfill 済み。
 
 ### AI follow-up step(ADR-012 / ADR-021 / ADR-024、Phase 1 実装済み)
 
