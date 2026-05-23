@@ -4,7 +4,7 @@
 > ADR の未解決の論点 + ROADMAP の must-have + SPEC / PRD の open items を統合。
 > 各項目に **出典** を併記、詳細は元 doc を参照。
 > 戦術レベル(ad-hoc バグ / 小機能要望 / 質問) は `issues/` に積む(`issues/README.md` 参照)。
-> 最終更新: 2026-05-17
+> 最終更新: 2026-05-23
 
 ---
 
@@ -29,6 +29,7 @@ ADR-019 世界観「星が積もる」を Phase 0 で実機検証するため、
 - [x] ~~**Vercel デプロイ**~~ **2026-05-17 完了** ─ `https://hoshifumi.vercel.app`、Deployment Protection 解除済み、env 5 件投入
 - [x] ~~**メール配信設定**~~ **2026-05-17 Google OAuth 採用で迂回** ─ Supabase デフォルト rate limit(2/h)が Phase 0 ですら使い物にならず、Resend ドメイン未取得のため Google OAuth を主動線に。Magic Link は backup として残存。Resend + 独自ドメインは v1.0 launch 前に着手(ADR 化候補)
 - [x] ~~**iOS Safari にホーム追加**~~ **2026-05-17 完了** ─ ホーム画面に 🌒 アイコン追加、standalone モードで起動可能
+- [x] ~~**Vercel 自動 deploy 復活**~~ **2026-05-23 完了** ─ Git 連携が外れて push が auto-deploy をトリガしなくなっていた(`link: NO LINK` 状態)。Vercel Dashboard → Project Settings → Git で GitHub repo を再接続 → 空コミット push で検証、1分以内に自動 deploy が走ることを確認
 - [ ] **iOS カレンダーで 22:00 毎日リマインダー設定**(`DEPLOYMENT.md` Step 7)
 - [ ] **本番で Day 1 エントリ submit + FRICTION-LOG.md 初回記録**
 
@@ -47,6 +48,7 @@ Phase 0 終了して、β に向けた本格実装。
 
 ### コア機能(必須)
 - [x] ~~**AI follow-up question** 実装~~ **2026-05-18 完了** ─ 当初 Gemini 2.0 Flash (ADR-021) 予定だったが free tier `limit:0` issue で **Anthropic Claude Haiku 4.5 に切替**(ADR-022 で ADR-021 partial supersede)。quote-back style (ADR-016)、blocking await + silent skip fallback。`lib/ai/` 抽象化基盤も同 spec で整備、provider 切替は env のみ。spec: `docs/specs/2026-05-18-ai-followup-question-design.md`、plan: `docs/plans/2026-05-18-ai-followup-question.md`
+  - [x] ~~**multi-turn 化 + 質問品質改善**(ADR-024)~~ **2026-05-23 完了** ─ 適応的 multi-turn(最大3問、AI が毎ターン JSON 構造化出力で ask/close を自己判断、ハードキャップ3問)。2レジスター prompt(掘る / 味わう)+ 空質問ガード(主語 / はい・いいえ / 既出の答え / 事実)を新規導入。「おやすみだから最高。」起点ケースの予防接種 few-shot を埋め込み。確認画面・カレンダー詳細も multi-turn 対応。失敗時:初問 = silent skip、2問目以降 = graceful close(成立ターン保持)。schema:`answers.question_position` CHECK を `1..8` へ拡張(migration `20260523000000_ai_multiturn.sql`)。spec: `docs/specs/2026-05-23-ai-followup-multiturn-design.md`、plan: `docs/superpowers/plans/2026-05-23-ai-followup-multiturn.md`
   - [ ] **Gemini 切替再検討**(β 後 100+ user 規模 or Gemini billing 解決時) ─ A/B 評価で品質劣化なければ移行、ADR-022 未解決の論点
 - [x] ~~**Q3 hybrid chip + text escape 実装**~~ **2026-05-19 着手 / 2026-05-21 完了** ─ Phase 0 Day 2 owner 観察(Q3 free text が「明日もがんばろう」化)で ADR-014 を partial supersede(ADR-023)。default 4 chip(明日もがんばる / ゆっくり眠る / 今日はここまで / そのままで)+「自由に書く」escape。spec: `docs/specs/2026-05-19-q3-hybrid-chip-design.md`、plan: `docs/plans/2026-05-19-q3-hybrid-chip.md`
 - [x] ~~**DB スキーマ migration**~~ **2026-05-17 完了** ─ `supabase/migrations/20260517000000_callback_state.sql`:
@@ -61,13 +63,14 @@ Phase 0 終了して、β に向けた本格実装。
   - [ ] window-probabilistic unlock への切り戻し検討(Phase 0 FRICTION-LOG 入力次第、現状は Phase 0 用に deterministic 化)
   - [ ] 似てる体感の日 callback(身体感覚軸)─ `ADR-017` future
   - 出典: `ADR-017` / `SPEC.md` §8
-- [x] ~~**追加テンプレート**(仕事 / 親 / クリエイター系)~~ **2026-05-23 完了** ─ basic + 仕事 / 子育て / つくる / 感謝 の 5 種、Q2 文言のみテンプレ別、sticky last-used 選択。spec: `docs/specs/2026-05-21-additional-templates-design.md`、plan: `docs/plans/2026-05-21-additional-templates.md`
-- [ ] **テンプレ選択 onboarding** ─ `ROADMAP.md` v1.0
+- [x] ~~**追加テンプレート**(仕事 / 親 / クリエイター系)~~ **2026-05-23 完了** ─ basic + 仕事 / 子育て / つくる / 感謝 の 5 種、Q2 文言のみテンプレ別。spec: `docs/specs/2026-05-21-additional-templates-design.md`、plan: `docs/plans/2026-05-21-additional-templates.md`
+  - **追記(ADR-025、2026-05-23)**:sticky last-used の inline switcher モデルは ADR-025 で supersede。テンプレはユーザー単位の設定(`profiles.template_name`)に変更、初回 onboarding で選択、`/settings` で変更。`/today` の inline switcher は撤去、basic の表示名は「ほしふみ」→「きほん」に改名。過去日の新規エントリも `profile.template_name` を使う(2026-05-23 fix)
+- [x] ~~**テンプレ選択 onboarding**~~ **2026-05-23 完了** ─ ADR-025 で実装。`/onboarding` 画面で 1 タップ選択 → `setTemplate` server action → `/today` 復帰。`/today` が `profiles.template_name` NULL を検知して `/onboarding` へ誘導。spec: `docs/specs/2026-05-23-template-as-user-setting-design.md`、plan: `docs/superpowers/plans/2026-05-23-template-as-user-setting.md`
 - [ ] **月次 AI レポート** 生成 ─ `SPEC.md` §9
   - **⚠️ 出力スキーマを ADR-016 準拠で再設計してから実装**(現プロンプトの `summary_text` は引用係原則違反)
 - [ ] **月次レポート閲覧ページ** ─ `ROADMAP.md` v1.0
 - [ ] **検索**(基本テキスト) ─ `ROADMAP.md` v1.0
-- [ ] **オンボーディング**(Welcome → テンプレ選択 → 最初のエントリ)
+- [ ] **オンボーディング Welcome / 最初のエントリ誘導** ─ テンプレ選択 part は ADR-025 で完了(↑)。残:Welcome 画面と最初のエントリ前の軽い導入(現状 `/onboarding` はテンプレ選択 1 タップのみ)
 - [ ] **プライバシーポリシー / 利用規約** ページ ─ `PRD.md` §8
 
 ### あると嬉しい
@@ -88,9 +91,9 @@ Phase 0 終了して、β に向けた本格実装。
 - [ ] **解約フロー**(ソフト確認 + win-back?) ─ `SPEC.md` §15
 
 ### v1.0 仕様詳細
-- [ ] **AI follow-up プロンプト草案**(ADR-016 引用係原則を embed) ─ `ADR-012` open
-- [ ] **AI follow-up Single vs Multi-turn**(まず single-turn 推奨) ─ `ADR-012` open
-- [ ] **AI follow-up 失敗時 fallback**(silent skip / retry / Q3 にジャンプ) ─ `ADR-012` open
+- [x] ~~**AI follow-up プロンプト草案**(ADR-016 引用係原則を embed) ─ `ADR-012` open~~ **2026-05-23 完了** ─ ADR-024 と `lib/ai/prompts/follow-up.ts` で確定(2レジスター[掘る/味わう] + 空質問ガード + JSON 構造化出力)
+- [x] ~~**AI follow-up Single vs Multi-turn**(まず single-turn 推奨) ─ `ADR-012` open~~ **2026-05-23 完了** ─ ADR-024 で適応的 multi-turn(初問 + 深堀り最大2回 = 合計3問キャップ、AI が毎ターン ask/close を自己判断)を v1.0 で採用と決定。先行 spec 2026-05-18 §1 の「v1.0 = single turn」α 決定は ADR-024 で前倒し supersede
+- [x] ~~**AI follow-up 失敗時 fallback**(silent skip / retry / Q3 にジャンプ) ─ `ADR-012` open~~ **2026-05-23 完了** ─ 初問失敗 = silent skip(Q3 prompt 上に「今夜は静かに進みます」)、2問目以降の失敗 = graceful close(成立ターンを保持)で確定(ADR-024)
 - [ ] **Custom template UI**(v1.1 前にモックアップ必要) ─ `SPEC.md` §15
 - [ ] **Push 通知 opt-in タイミング**(Day 3 / 初回完了 / その他) ─ `SPEC.md` §15
 - [ ] **callback カードの視覚デザイン** ─ `ADR-017` open(現状 `bg-primary-50 border-primary-100` 暫定、Phase 0 FRICTION-LOG 観察を待ってから磨く)
