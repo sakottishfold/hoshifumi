@@ -4,6 +4,7 @@ import { ChevronLeft, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/lib/server-actions/auth";
 import { AppHeader } from "@/components/AppHeader";
+import { TemplateSetting } from "./_components/TemplateSetting";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -45,6 +46,10 @@ export default async function SettingsPage() {
                     : "Free"
               }
             />
+          </SettingsCard>
+
+          <SettingsCard title="日記のテンプレート">
+            <TemplateSetting current={profile?.template_name ?? "basic"} />
           </SettingsCard>
 
           <SettingsCard title="灯した夜">
