@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { getEntryByDate } from "@/lib/server-actions/entries";
 import { formatDisplay, todayJST } from "@/lib/utils/date";
 import { BODY_SENSATION_OPTIONS, getTemplate } from "@/lib/constants/template";
+import { createClient } from "@/lib/supabase/server";
 import { AppHeader } from "@/components/AppHeader";
 import { MoonPhase } from "@/components/MoonPhase";
 import { QuestionFlow } from "@/app/today/_components/QuestionFlow";
@@ -54,6 +55,19 @@ export default async function EntryDetailPage({ params, searchParams }: Props) {
 
   const entry = await getEntryByDate(date);
 
+  // ADR-025: 新規エントリ(entry なし)は profile.template_name を default に(/today と同じ挙動)
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("template_name")
+    .eq("id", user.id)
+    .single();
+  const defaultTemplate = profile?.template_name ?? "basic";
+
   // mode C: 編集モード (?edit=1)
   if (editing) {
     return (
@@ -77,7 +91,7 @@ export default async function EntryDetailPage({ params, searchParams }: Props) {
             initialEntry={entry}
             date={date}
             displayDate={formatDisplay(date)}
-            initialTemplateName={entry?.template_name ?? "basic"}
+            initialTemplateName={entry?.template_name ?? defaultTemplate}
           />
         </div>
       </main>

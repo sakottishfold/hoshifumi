@@ -50,6 +50,9 @@ export default async function SettingsPage() {
 
           <SettingsCard title="日記のテンプレート">
             <TemplateSetting current={profile?.template_name ?? "basic"} />
+            <p className="text-xs text-neutral-500 px-1">
+              変更は次に書くエントリから反映されます
+            </p>
           </SettingsCard>
 
           <SettingsCard title="灯した夜">
