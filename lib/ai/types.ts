@@ -27,6 +27,8 @@ export interface ChatRequest {
   maxRetries?: number;
   /** 指定時、provider に JSON 構造化出力を要求する(Gemini responseSchema)。provider 非依存のため unknown。 */
   responseSchema?: unknown;
+  /** provider の既定モデルを上書き(例:Anthropic で Sonnet を使う等)。未指定は provider 既定値。 */
+  model?: string;
 }
 
 /** chat 呼び出し success response */

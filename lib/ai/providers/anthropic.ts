@@ -48,7 +48,7 @@ export async function chat(req: ChatRequest): Promise<ChatResponse> {
   try {
     const response = await client.messages.create(
       {
-        model: MODEL,
+        model: req.model ?? MODEL,
         system: req.system,
         messages,
         temperature: req.temperature ?? 0.4,

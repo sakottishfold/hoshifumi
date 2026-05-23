@@ -39,7 +39,7 @@ export async function chat(req: ChatRequest): Promise<ChatResponse> {
 
   try {
     const result = await ai.models.generateContent({
-      model: MODEL,
+      model: req.model ?? MODEL,
       contents,
       config: {
         systemInstruction: req.system,
