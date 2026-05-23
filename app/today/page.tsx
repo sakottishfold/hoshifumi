@@ -1,17 +1,35 @@
+import { redirect } from "next/navigation";
 import { todayJST, formatDisplay } from "@/lib/utils/date";
-import { getEntryByDate, getLastUsedTemplate } from "@/lib/server-actions/entries";
+import { getEntryByDate } from "@/lib/server-actions/entries";
+import { createClient } from "@/lib/supabase/server";
 import { QuestionFlow } from "./_components/QuestionFlow";
 import { AppHeader } from "@/components/AppHeader";
 
 export default async function TodayPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  // ADR-025: テンプレ未選択(onboarding 未完了)なら onboarding へ誘導
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("template_name")
+    .eq("id", user.id)
+    .single();
+  if (!profile?.template_name) {
+    redirect("/onboarding");
+  }
+
   const today = todayJST();
   const entry = await getEntryByDate(today);
   const isCompleted = !!entry?.completed_at;
 
-  // 追加テンプレート: 編集なら entry 自身の template、新規なら直近 entry の template(sticky last-used)
-  const initialTemplateName = entry
+  // 編集なら entry 自身の template、新規ならユーザー設定の template
+  const templateName = entry
     ? (entry.template_name ?? "basic")
-    : await getLastUsedTemplate();
+    : profile.template_name;
 
   return (
     <main className="min-h-dvh">
@@ -29,7 +47,7 @@ export default async function TodayPage() {
           initialEntry={entry}
           date={today}
           displayDate={formatDisplay(today)}
-          initialTemplateName={initialTemplateName}
+          initialTemplateName={templateName}
         />
       </div>
     </main>
