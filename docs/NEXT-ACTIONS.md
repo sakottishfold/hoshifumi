@@ -4,7 +4,7 @@
 > ADR の未解決の論点 + ROADMAP の must-have + SPEC / PRD の open items を統合。
 > 各項目に **出典** を併記、詳細は元 doc を参照。
 > 戦術レベル(ad-hoc バグ / 小機能要望 / 質問) は `issues/` に積む(`issues/README.md` 参照)。
-> 最終更新: 2026-05-23
+> 最終更新: 2026-05-24
 
 ---
 
@@ -66,8 +66,7 @@ Phase 0 終了して、β に向けた本格実装。
 - [x] ~~**追加テンプレート**(仕事 / 親 / クリエイター系)~~ **2026-05-23 完了** ─ basic + 仕事 / 子育て / つくる / 感謝 の 5 種、Q2 文言のみテンプレ別。spec: `docs/specs/2026-05-21-additional-templates-design.md`、plan: `docs/plans/2026-05-21-additional-templates.md`
   - **追記(ADR-025、2026-05-23)**:sticky last-used の inline switcher モデルは ADR-025 で supersede。テンプレはユーザー単位の設定(`profiles.template_name`)に変更、初回 onboarding で選択、`/settings` で変更。`/today` の inline switcher は撤去、basic の表示名は「ほしふみ」→「きほん」に改名。過去日の新規エントリも `profile.template_name` を使う(2026-05-23 fix)
 - [x] ~~**テンプレ選択 onboarding**~~ **2026-05-23 完了** ─ ADR-025 で実装。`/onboarding` 画面で 1 タップ選択 → `setTemplate` server action → `/today` 復帰。`/today` が `profiles.template_name` NULL を検知して `/onboarding` へ誘導。spec: `docs/specs/2026-05-23-template-as-user-setting-design.md`、plan: `docs/superpowers/plans/2026-05-23-template-as-user-setting.md`
-- [ ] **月次 AI レポート** 生成 ─ `SPEC.md` §9
-  - **⚠️ 出力スキーマを ADR-016 準拠で再設計してから実装**(現プロンプトの `summary_text` は引用係原則違反)
+- [x] ~~**月次 AI レポート** 生成 ─ `SPEC.md` §9~~ **2026-05-23 完了** ─ ADR-016 準拠の curation primitive(`entry_count` / `body_phase_distribution` / `word_frequencies` / `top_phrases` verbatim / `highlight_entry_ids` / `day_pairs`)で再設計、Anthropic Claude Sonnet 4.6 + responseSchema + verbatim 部分文字列検証 + Vercel Cron `0 0 1 * *`。閲覧 UI は別タスク(↓ 残置)。spec: `docs/specs/2026-05-23-monthly-report-schema-redesign-design.md`
 - [ ] **月次レポート閲覧ページ** ─ `ROADMAP.md` v1.0
 - [ ] **検索**(基本テキスト) ─ `ROADMAP.md` v1.0
 - [ ] **オンボーディング Welcome / 最初のエントリ誘導** ─ テンプレ選択 part は ADR-025 で完了(↑)。残:Welcome 画面と最初のエントリ前の軽い導入(現状 `/onboarding` はテンプレ選択 1 タップのみ)
@@ -105,7 +104,7 @@ Phase 0 終了して、β に向けた本格実装。
   - [ ] `/today/done` リロードで callback が消える挙動の是非(現状: cool-down で re-roll 失敗 → 消える。Phase 0 で体感確認)
   - 出典:`ADR-017` open
 - [ ] **Year 2+ anniversary 挙動**(2年前・3年前のスタック?)─ `ADR-017` open
-- [ ] **月次レポート出力スキーマ再設計**(ADR-016 違反箇所を curation primitive に置換) ─ `ADR-016` consequences
+- [x] ~~**月次レポート出力スキーマ再設計**(ADR-016 違反箇所を curation primitive に置換) ─ `ADR-016` consequences~~ **2026-05-23 完了** ─ 5 primitive(数値 / body phase 分布 / 頻出語 / verbatim 引用 / highlight / day pair)で再設計、`summary_text` / `numerical_trends.trend` / `patterns[].insight` 等の自由文・解釈ラベルはスキーマレベルで物理ブロック。spec: `docs/specs/2026-05-23-monthly-report-schema-redesign-design.md`
 
 ### 世界観 / アクセシビリティ
 - [ ] **日中 / 非就寝時使用** の明示スタンス(現状 out of scope) ─ `ADR-019` open
@@ -122,7 +121,7 @@ Phase 0 終了して、β に向けた本格実装。
 - [x] ~~**物理フォルダ rename**:`mittsu/` → `hoshifumi/`~~ **2026-05-16 完了** ─ `ADR-018`(memory dir も同時に rename、docs 内のパス参照も更新済み)
 - [ ] **ドメイン取得**:`hoshifumi.app` / `hoshifumi.jp` 等 ─ v1.0 launch 前 ─ `ADR-018` open
 - [ ] **フォント self-host 最適化**(現状 Google Fonts CDN、PWA offline 対応で要検討)
-- [ ] **CRON_SECRET の設定**(v1.1 月次レポート Cron 用) ─ `DEPLOYMENT.md` Step 6
+- [ ] **CRON_SECRET の設定**(v1.0 月次レポート Cron 用) ─ `DEPLOYMENT.md` Step 6 ─ コードは実装済み(`app/api/cron/monthly-reports/route.ts` が bearer 検証)、Vercel env への投入が本番運用作業として残置
 
 ### v1.1+ 機能
 - [ ] **Stripe 統合**(Free/Pro/Premium) ─ `ROADMAP.md` v1.1

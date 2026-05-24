@@ -1,6 +1,6 @@
 # 月次レポートの schema 再設計(ADR-016 準拠 curation primitive)─ Design
 
-> Status: **承認待ち**(オーナーレビュー後 writing-plans へ)
+> Status: **実装完了**(2026-05-23)
 > 日付: 2026-05-23
 > 関連 ADR: ADR-016(AI は引用係、解釈者ではない)/ ADR-019(worldview)/ ADR-021・022(AI provider)/ ADR-024(構造化出力パス)
 > 関連 spec: `docs/SPEC.md` §9(現行ドラフトを本 spec が丸ごと置換)

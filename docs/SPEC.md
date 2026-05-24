@@ -11,6 +11,7 @@
 > - ADR-024 AI follow-up の multi-turn 化(最大3問の適応的深堀り)実装済み ─ 本セクション §3/§6 に反映、AI が毎ターン JSON 構造化出力で ask/close を判断
 > - `answers.question_text` カラム + `question_position` CHECK BETWEEN 1 AND 8 への schema 緩和済み(pos 4〜6 = AI follow-up の対話ターン)
 > - ADR-025 テンプレートをユーザー単位の設定に(`profiles.template_name`、`/onboarding` で初回選択、`/settings` で変更、`/today` の inline switcher 廃止)実装済み ─ 本セクション §3 に反映
+> - ADR-016 準拠の月次 AI レポート(curation primitive のみ、Anthropic Sonnet 4.6、Vercel Cron `0 0 1 * *`)実装済み ── 本セクション §2/§9 に反映
 
 ## 1. システムアーキテクチャ
 
@@ -43,13 +44,16 @@
 
 > AI 失敗時(timeout / API error / rate limit):auto-retry 1 回後も失敗なら、**初問の失敗**は **silent skip**(Q3 prompt 上に「今夜は静かに進みます」を 1 行表示し、pos 4 行を insert せず Q3 まで進む)。**2問目以降の失敗・不正出力**は **graceful close** ── それまでに成立した対話ターンは保持したまま対話を閉じ、Q3 へ進む。
 
-### リクエストフロー(月次 AI レポート - v1.1)
-1. Vercel Cron が毎月1日 09:00 JST に起動
-2. Cron エンドポイントが前月に5件以上エントリのある Pro+ ユーザーを iterate
-3. 各ユーザー:エントリ取得 → プロンプト構築 → **`lib/ai/chat()` 経由で Gemini 2.0 Flash 呼び出し**(AI follow-up と同じ provider 層を再利用) → `monthly_reports` に格納
-4. プッシュ通知(v1.1+)
-
-> ⚠️ ADR-016 引用係原則により、現行 §9 のプロンプト(`summary_text` で物語的に description する)は **そのままでは違反**。v1.1 着手時に出力スキーマを「curation の primitive」(top phrases、引用された日、対比される day pair、hashtag 風タグなし)に再設計する。詳細は §9 冒頭の note 参照。
+### リクエストフロー(月次 AI レポート)
+1. Vercel Cron(`0 0 1 * *`、`vercel.json`)が毎月1日 00:00 UTC ≒ 09:00 JST に `/api/cron/monthly-reports` を叩く
+2. Cron エンドポイントが `CRON_SECRET` を bearer 検証 → service role で全 profile を iterate(前月対象)
+3. 各ユーザー:`generateMonthlyReportForUser(userId, year, month)` を実行
+   - 当該月の完了エントリ + answers を取得、5 件未満なら `skipped: insufficient_entries`
+   - deterministic 計算(`entry_count` / `body_phase_distribution` / `word_frequencies`)
+   - **`lib/ai/chat()` 経由で Anthropic Claude Sonnet 4.6 を `responseSchema` 付き呼び出し**(provider 層は AI follow-up と共通)
+   - 検証(`top_phrases` は verbatim 部分文字列チェック / `highlight_entry_ids` / `day_pairs` は当該月の entry_id のみ通す / 件数クランプ)
+   - `monthly_reports` に upsert(`onConflict: user_id,year,month`、冪等)
+4. 閲覧 UI(`/reports/[year]/[month]`) / プッシュ通知は別タスク(out of scope)
 
 ## 2. データベーススキーマ
 
@@ -109,23 +113,38 @@ answers (
 
 `question_text` は AI 質問のように「entry ごとに動的に決まる質問文」を保存するためのカラム。固定テンプレ質問(pos 1-3)では使わない(質問文は `lib/constants/template.ts` から render 時に引く)。AI follow-up の multi-turn 化(ADR-024)で対話ターンは最大 3 つ(pos 4〜6)になり、CHECK は `BETWEEN 1 AND 8` まで緩和済み(将来テンプレ拡張の余地も兼ねる)。
 
-### テーブル(v1.1+)
+### テーブル(v1.0 月次 / v1.1+ カスタムテンプレ)
 
 ```sql
--- monthly_reports: AI-generated monthly summary
+-- monthly_reports: ADR-016 準拠の月次レポート(curation primitive のみ)
+-- 自由文フィールド(summary / insight / theme 等)はスキーマレベルで持たない。
+-- migration: supabase/migrations/20260523020000_monthly_reports.sql
 monthly_reports (
-  id                uuid PK
-  user_id           uuid → auth.users.id
-  year              integer
-  month             integer CHECK BETWEEN 1 AND 12
-  summary_text      text NOT NULL
-  numerical_trends  jsonb        -- {mood_avg: 3.4, completion_rate: 0.78}
-  word_frequencies  jsonb        -- {"集中": 12, "疲れた": 8}
-  highlight_entry_ids uuid[]
-  patterns          jsonb        -- AI-detected patterns
-  generated_at      timestamptz
+  id                       uuid PK
+  user_id                  uuid → auth.users.id ON DELETE CASCADE
+  year                     integer NOT NULL
+  month                    integer NOT NULL CHECK BETWEEN 1 AND 12
+
+  -- 1. 数値統計(deterministic)
+  entry_count              integer NOT NULL
+  body_phase_distribution  jsonb NOT NULL DEFAULT '{}'::jsonb   -- {"1": n, ..., "5": n}
+
+  -- 2. 頻出語(deterministic、降順を保つため配列)
+  word_frequencies         jsonb NOT NULL DEFAULT '[]'::jsonb   -- [{word, count}, ...]
+
+  -- 3. 印象的だった日(AI 選択、entry_id のみ ─ 理由は書かせない)
+  highlight_entry_ids      uuid[] NOT NULL DEFAULT '{}'
+
+  -- 4. 重みのある一言(AI 選択、verbatim 引用)
+  top_phrases              jsonb NOT NULL DEFAULT '[]'::jsonb   -- [{entry_id, phrase}, ...]
+
+  -- 5. 対比のペア(AI 選択、entry_id ペアのみ ─ 対比のタイプは書かせない)
+  day_pairs                jsonb NOT NULL DEFAULT '[]'::jsonb   -- [[entry_id_a, entry_id_b], ...]
+
+  generated_at             timestamptz NOT NULL DEFAULT now()
   UNIQUE (user_id, year, month)
 )
+-- RLS:SELECT は本人のみ。INSERT/UPDATE/DELETE は Cron が service role で実行(RLS bypass)。
 
 -- custom_templates (v1.1+): User-defined templates
 custom_templates (
@@ -488,62 +507,70 @@ streak の下に小さなカード。形(デザインで詰める):
 
 ---
 
-## 9. AI 月次レポート(v1.1)
+## 9. AI 月次レポート
 
-> ⚠️ **本セクションは未実装(v1.1 着手前)**。下記プロンプトは ADR-016 制定以前のドラフトで、`summary_text` 出力フィールドがユーザー状態を description / interpret しており **ADR-016 引用係原則に違反**。**v1.1 実装前に、出力スキーマとプロンプトを丸ごと再設計する**。物語的要約ではなく、curation の primitive(top phrases、verbatim 引用された日、対比される day pair、頻出語の生 frequency)を出す方向で再設計。下記は「捨てる前提のドラフト」として残してある。
->
-> Provider は AI follow-up と同じく **Gemini 2.0 Flash**(ADR-021)を `lib/ai/chat()` 経由で再利用する。`lib/ai/prompts/` に `monthly-report.ts` を追加して prompt + few-shots を集約、provider 抽象化を共有することで v1.1+ で Anthropic に切り替えるときは env 1 つで両機能とも switch できる。
+> 出典:`docs/specs/2026-05-23-monthly-report-schema-redesign-design.md`(2026-05-23 実装完了)。
+> 関連 ADR:ADR-016(AI は引用係、解釈者ではない)/ ADR-019(worldview)/ ADR-022(AI provider = Anthropic)。
+> 本セクションは「生成 + schema + プロンプト + 検証」までを記述。閲覧 UI(`/reports/[year]/[month]`)は別タスクで扱う(NEXT-ACTIONS §「月次レポート閲覧ページ」)。
+
+### 設計原則(ADR-016 引用係原則)
+
+AI は **選んで並べる係**。要約・ラベリング・診断・助言・予測・パターンの名付けはしない。
+そのため出力は **5 つの curation primitive** に限定する:
+
+| # | primitive | 由来 | 出力 |
+|---|---|---|---|
+| 1 | `entry_count` | deterministic | 当月の完了エントリ数 |
+| 2 | `body_phase_distribution` | deterministic | `{ "1": n, ..., "5": n }`(Q1 身体感覚 1-5 の度数) |
+| 3 | `word_frequencies` | deterministic | 自由記述(Q2 / Q3 自由文 / AI 対話 user 回答)を tiny-segmenter で分かち書きし、ストップワード除外して上位 15 語を `[{word, count}, ...]` 配列で(降順保持のため配列) |
+| 4 | `top_phrases` | AI 選択 | エントリ本文から重みのある verbatim 引用を 5〜8 件、`[{entry_id, phrase}, ...]` |
+| 5 | `highlight_entry_ids` | AI 選択 | 印象的に映る日を 3〜5 件、entry_id 配列のみ(理由は書かせない) |
+| 5' | `day_pairs` | AI 選択 | 対比が生まれる 2 日のペアを 1〜2 組、`[[entry_id_a, entry_id_b], ...]`(対比のタイプは書かせない) |
+
+`summary_text` / `numerical_trends.trend` / `patterns[].insight` のような自由文・解釈ラベルは **スキーマレベルで持たない**(物理ブロック)。
 
 ### トリガー
-Vercel Cron:`0 0 1 * *`(毎月1日、00:00 UTC = 09:00 JST)
 
-### ユーザーごとの処理
-1. 前月の全エントリを取得
-2. 5件未満ならスキップ(信号不足)
-3. プロンプト構築(再設計後の curation primitive 形式)
-4. `lib/ai/chat()` 経由で Gemini 2.0 Flash を structured output で呼び出し
-5. JSON レスポンスを parse(出力スキーマは ADR-016 準拠で再設計)
-6. `monthly_reports` に insert
-7. プッシュ通知
+- Vercel Cron:`0 0 1 * *`(毎月1日 00:00 UTC ≒ 09:00 JST) ─ `vercel.json` 定義
+- エンドポイント:`app/api/cron/monthly-reports/route.ts`(GET)
+- 認証:`Authorization: Bearer ${CRON_SECRET}` を bearer 検証(env 未設定または不一致は 401)
+- 対象:全 profiles を service role で iterate、対象月は前月(UTC 基準)
 
-### プロンプトテンプレート(⚠️ ADR-016 違反、再設計対象のドラフト)
+### ユーザーごとの処理(`generateMonthlyReportForUser`)
 
-```
-あなたは「ほしふみ」という寝る前ジャーナルアプリのAI分析アシスタントです。
-ユーザーが1ヶ月間記録した日々の振り返りを分析し、優しく洞察を返してください。
+`lib/server-actions/monthly-report.ts`:
 
-## 入力データ
-{entries as JSON}
+1. 当該ユーザー × 当該月の `entries`(`completed_at IS NOT NULL`) + 子 `answers` を取得
+2. 5 件未満なら `{ status: "skipped", reason: "insufficient_entries" }`(信号不足)
+3. **deterministic 計算**
+   - `entry_count` = エントリ数
+   - `body_phase_distribution` = pos 1 `value_number` の度数(string キー)
+   - `word_frequencies` = Q2 / Q3 自由文 / AI 対話の user 回答 を `lib/utils/text.ts` の `wordFrequencies()` で(`tiny-segmenter` で分かち書き → ストップワード除外 → 上位 15 語)
+4. **AI 呼び出し**:`lib/ai/chat()` 経由で **Anthropic Claude Sonnet 4.6**(`model: "claude-sonnet-4-6"`)を `responseSchema` 付きで呼ぶ(`temperature: 0.4`、`maxOutputTokens: 2000`、`timeoutMs: 30000`)。system prompt と responseSchema は `lib/ai/prompts/monthly-report.ts` に集約
+5. **検証(必須)**:AI 出力を信用せず、保存前に以下を全件パスさせる
+   - `top_phrases[].entry_id` が当該月の entry_id 集合に含まれる
+   - `top_phrases[].phrase` が **対応 entry_id の本文(Q2 + Q3 自由文 + AI 対話 user 回答を改行 join したもの)の部分文字列**(verbatim 厳守、AI による編集や要約を弾く)
+   - `highlight_entry_ids` の各 id が当該月 entry_id 集合に含まれる、重複除去
+   - `day_pairs` は 2 要素配列で両方が当該月 entry_id 集合に含まれ、かつ異なる id
+   - 件数クランプ:`top_phrases <= 8` / `highlight_entry_ids <= 5` / `day_pairs <= 2`
+6. AI 失敗(timeout / parse error / API error)時は `{ status: "skipped", reason: "ai_failed" }`(silent skip、deterministic 部分も保存しない)
+7. `monthly_reports` に upsert(`onConflict: user_id,year,month`、再実行で冪等)
 
-## 出力フォーマット (必ずJSON)
-{
-  "summary_text": "今月のあなたを2-3段落で...",   // ← ADR-016 違反、再設計で削除予定
-  "numerical_trends": {
-    "mood_avg": <平均気分1-5>,
-    "completion_rate": <記録率0-1>,
-    "trend": "<up|stable|down>"               // ← interpret 寄り、再考
-  },
-  "word_frequencies": {"<よく出た言葉>": <回数>, ...} (上位10語、ストップワード除外),
-  "highlight_entry_ids": [<印象的だった3日のentry_id>],
-  "patterns": [
-    {"type": "weekday", "insight": "..."},      // ← "insight" は interpret、要削除
-    {"type": "trend", "insight": "..."}
-  ]
-}
+### プロンプト
 
-## 大切なルール
-- 「やりたかったけどできなかった」を責めない
-- 数値だけでなく、ユーザーが書いた言葉を引用する
-- 「あなたは○○な人です」と決めつけない
-- 不安や悲しみが見えても、医療的アドバイスはしない
-- 自殺・自傷の兆候が見えた場合、必ず よりそいホットライン (0120-279-338) を提示
-```
+`lib/ai/prompts/monthly-report.ts` に `MONTHLY_REPORT_SYSTEM_PROMPT` / `MONTHLY_REPORT_RESPONSE_SCHEMA` / `buildMonthlyReportMessages()` を集約。要点:
 
-### コスト見積もり(Gemini 2.0 Flash、v1.1 時点)
-- 入力:約3,000 tokens(30日 × 100 tokens 平均)
-- 出力:約1,500 tokens
-- Gemini 2.0 Flash:Free tier 範囲内に収まる想定(Pro tier 移行時も $0.01 未満 / レポート)
-- Pro ユーザー1人:月1レポート ≈ 数円コスト vs ¥480 売上 = AI 粗利 99%+
+- システム指示:「**やること**」(top_phrases / highlight_entry_ids / day_pairs を選ぶ、引用は verbatim、entry_id だけ返す)+「**絶対にしないこと**」(要約 / ラベリング / 診断 / 助言 / 予測 / パターン名付け / 引用文字列の編集 / 出力 JSON へのキー追加)を明記
+- 出力 JSON は responseSchema(`@google/genai` の `Type` ベース、Gemini / Anthropic 両対応)で形を物理的に強制
+- 入力は `buildMonthlyReportMessages()` が user message 1 件に `{entry_id, date, body_phase, body_label, q2, q3, ai_dialog}` を JSON 文字列化して載せる
+
+Provider は ADR-022 で Anthropic に統一済みのため、AI follow-up と同じ `lib/ai/` 抽象化を再利用(`ChatRequest.model` で per-call にモデルを上書き、ここでは `claude-sonnet-4-6`)。
+
+### コスト見積もり(Anthropic Claude Sonnet 4.6)
+
+- 入力:約 5,000 tokens(30 日 × multi-turn AI 対話込みで増)
+- 出力:約 500-1500 tokens(curation primitive のみ、自由文なし)
+- Pro ユーザー 1 人当たり 月 1 レポート ≈ 数 ¥10 オーダー vs Pro ¥480 想定 = AI 粗利は十分確保
 
 ## 10. データバリデーション
 
